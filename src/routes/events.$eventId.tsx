@@ -170,9 +170,11 @@ function EventDetail() {
       </div>
 
       <GallerySection eventId={eventId} isHost={!!isHost} />
+      {ended && rsvp?.status === "going" && <FeedbackSection eventId={eventId} />}
     </article>
   );
 }
+
 
 function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean }) {
   const { user } = useAuth();
