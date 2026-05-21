@@ -171,17 +171,23 @@ function EventCard({ ev }: { ev: HostedEvent }) {
           </Link>
         </Button>
         {isHost && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={async () => {
-              try { await exportAttendeesCsv(ev.id, ev.title); }
-              catch (err: any) { toast.error(err.message ?? "Export failed"); }
-            }}
-          >
-            <Download className="mr-1.5 h-3.5 w-3.5" />Export
+          <Button size="sm" variant="outline" onClick={() => doExport("rsvps")}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />Export RSVPs
           </Button>
         )}
+        {isHost && (
+          <Button size="sm" variant="outline" onClick={() => doExport("attendance")}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />Export attendance
+          </Button>
+        )}
+        {isHost && (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/events/$eventId" params={{ eventId: ev.id }} hash="gallery">
+              <Shield className="mr-1.5 h-3.5 w-3.5" />Moderation
+            </Link>
+          </Button>
+        )}
+
         {isHost && (
           <Button asChild size="sm" variant="outline">
             <Link to="/events/$eventId" params={{ eventId: ev.id }} hash="gallery">
