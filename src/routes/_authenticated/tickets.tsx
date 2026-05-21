@@ -32,7 +32,6 @@ type TicketRow = {
 
 function MyTickets() {
   const { user } = useAuth();
-  const nowIso = new Date().toISOString();
 
   const { data: tickets, isLoading } = useQuery({
     queryKey: ["my-tickets", user?.id],
