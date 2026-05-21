@@ -8,6 +8,37 @@ import { Calendar, Globe, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/h/$hostSlug")({
   component: HostPage,
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("hosts")
+      .select("name, description, avatar_url, banner_url")
+      .eq("slug", params.hostSlug)
+      .maybeSingle();
+    return { host: data };
+  },
+  head: ({ loaderData, params }) => {
+    const h = loaderData?.host;
+    const title = h?.name ? `${h.name} — Host` : "Host";
+    const description = (h?.description ?? `Upcoming events from ${h?.name ?? "this host"}.`).slice(0, 160);
+    const url = `/h/${params.hostSlug}`;
+    const image = h?.banner_url ?? h?.avatar_url;
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:type", content: "profile" },
+      { property: "og:url", content: url },
+      { name: "twitter:card", content: image ? "summary_large_image" : "summary" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ];
+    if (image) {
+      meta.push({ property: "og:image", content: image });
+      meta.push({ name: "twitter:image", content: image });
+    }
+    return { meta, links: [{ rel: "canonical", href: url }] };
+  },
 });
 
 function HostPage() {
