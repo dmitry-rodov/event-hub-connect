@@ -76,24 +76,36 @@ export function isPast(ev: HostedEvent): boolean {
 }
 
 export async function exportAttendeesCsv(eventId: string, eventTitle: string) {
-  const { data, error } = await supabase
-    .from("rsvps")
-    .select("status, queue_position, created_at, user_id, profile:profiles(display_name), tickets:tickets(code)")
-    .eq("event_id", eventId)
-    .order("status")
-    .order("created_at");
-  if (error) throw error;
+  const [rsvpsRes, ticketsRes] = await Promise.all([
+    supabase
+      .from("rsvps")
+      .select("status, queue_position, created_at, user_id")
+      .eq("event_id", eventId)
+      .order("status")
+      .order("created_at"),
+    supabase.from("tickets").select("user_id, code").eq("event_id", eventId),
+  ]);
+  if (rsvpsRes.error) throw rsvpsRes.error;
+  if (ticketsRes.error) throw ticketsRes.error;
 
-  const rows = [
+  const userIds = Array.from(new Set((rsvpsRes.data ?? []).map((r) => r.user_id)));
+  const { data: profiles } = userIds.length
+    ? await supabase.from("profiles").select("id, display_name").in("id", userIds)
+    : { data: [] as { id: string; display_name: string | null }[] };
+
+  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name ?? ""]));
+  const codeById = new Map((ticketsRes.data ?? []).map((t) => [t.user_id, t.code]));
+
+  const rows: (string | number)[][] = [
     ["Name", "User ID", "Status", "Queue", "Ticket Code", "RSVP At"],
-    ...((data ?? []).map((r: any) => [
-      r.profile?.display_name ?? "",
+    ...(rsvpsRes.data ?? []).map((r) => [
+      nameById.get(r.user_id) ?? "",
       r.user_id,
       r.status,
       r.queue_position ?? "",
-      r.tickets?.[0]?.code ?? "",
+      codeById.get(r.user_id) ?? "",
       new Date(r.created_at).toISOString(),
-    ])),
+    ]),
   ];
   const csv = rows
     .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -108,3 +120,4 @@ export async function exportAttendeesCsv(eventId: string, eventTitle: string) {
   a.remove();
   URL.revokeObjectURL(url);
 }
+
