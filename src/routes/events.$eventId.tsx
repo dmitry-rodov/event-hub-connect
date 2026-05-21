@@ -129,11 +129,13 @@ function EventDetail() {
           <h1 className="mt-2 font-display text-4xl md:text-5xl">{event.title}</h1>
           <RsvpStatusChip status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} promoted={promoted} />
 
-          <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(event.start_at).toLocaleString()}</span>
             {event.location && <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" />{event.location}</span>}
             {event.capacity && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />Cap. {event.capacity}</span>}
+            {user && !isHost && <ReportButton target={{ kind: "event", eventId }} />}
           </div>
+
 
           {event.description && (
             <div className="mt-8 whitespace-pre-wrap text-base leading-relaxed text-foreground/90">
