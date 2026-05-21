@@ -63,6 +63,7 @@ export type Database = {
           end_at: string | null
           host_id: string
           id: string
+          is_paid: boolean
           location: string | null
           slug: string
           start_at: string
@@ -80,6 +81,7 @@ export type Database = {
           end_at?: string | null
           host_id: string
           id?: string
+          is_paid?: boolean
           location?: string | null
           slug: string
           start_at: string
@@ -97,6 +99,7 @@ export type Database = {
           end_at?: string | null
           host_id?: string
           id?: string
+          is_paid?: boolean
           location?: string | null
           slug?: string
           start_at?: string
