@@ -62,7 +62,10 @@ function EventDetail() {
   });
 
   async function handleRsvp() {
-    if (!user) { navigate({ to: "/signin" }); return; }
+    if (!user) {
+      navigate({ to: "/signin", search: { redirect: `/events/${eventId}` } });
+      return;
+    }
     const { data, error } = await supabase.rpc("rsvp_event" as any, { _event_id: eventId });
     if (error) { toast.error(error.message); return; }
     const status = (data as any)?.status;
