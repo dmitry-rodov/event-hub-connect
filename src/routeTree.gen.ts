@@ -12,11 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HHostSlugRouteImport } from './routes/h.$hostSlug'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
 import { Route as AuthenticatedMyEventsRouteImport } from './routes/_authenticated/my-events'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedHostsNewRouteImport } from './routes/_authenticated/hosts.new'
 import { Route as AuthenticatedHostsHostSlugEditRouteImport } from './routes/_authenticated/hosts.$hostSlug.edit'
 import { Route as AuthenticatedEventsEventIdEditRouteImport } from './routes/_authenticated/events.$eventId.edit'
 
@@ -32,6 +34,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HHostSlugRoute = HHostSlugRouteImport.update({
@@ -59,6 +66,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedHostsNewRoute = AuthenticatedHostsNewRouteImport.update({
+  id: '/hosts/new',
+  path: '/hosts/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedHostsHostSlugEditRoute =
   AuthenticatedHostsHostSlugEditRouteImport.update({
     id: '/hosts/$hostSlug/edit',
@@ -80,6 +92,8 @@ export interface FileRoutesByFullPath {
   '/tickets': typeof AuthenticatedTicketsRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/h/$hostSlug': typeof HHostSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/hosts/new': typeof AuthenticatedHostsNewRoute
   '/events/$eventId/edit': typeof AuthenticatedEventsEventIdEditRoute
   '/hosts/$hostSlug/edit': typeof AuthenticatedHostsHostSlugEditRoute
 }
@@ -91,6 +105,8 @@ export interface FileRoutesByTo {
   '/tickets': typeof AuthenticatedTicketsRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/h/$hostSlug': typeof HHostSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/hosts/new': typeof AuthenticatedHostsNewRoute
   '/events/$eventId/edit': typeof AuthenticatedEventsEventIdEditRoute
   '/hosts/$hostSlug/edit': typeof AuthenticatedHostsHostSlugEditRoute
 }
@@ -104,6 +120,8 @@ export interface FileRoutesById {
   '/_authenticated/tickets': typeof AuthenticatedTicketsRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/h/$hostSlug': typeof HHostSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/_authenticated/hosts/new': typeof AuthenticatedHostsNewRoute
   '/_authenticated/events/$eventId/edit': typeof AuthenticatedEventsEventIdEditRoute
   '/_authenticated/hosts/$hostSlug/edit': typeof AuthenticatedHostsHostSlugEditRoute
 }
@@ -117,6 +135,8 @@ export interface FileRouteTypes {
     | '/tickets'
     | '/events/$eventId'
     | '/h/$hostSlug'
+    | '/invite/$token'
+    | '/hosts/new'
     | '/events/$eventId/edit'
     | '/hosts/$hostSlug/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -128,6 +148,8 @@ export interface FileRouteTypes {
     | '/tickets'
     | '/events/$eventId'
     | '/h/$hostSlug'
+    | '/invite/$token'
+    | '/hosts/new'
     | '/events/$eventId/edit'
     | '/hosts/$hostSlug/edit'
   id:
@@ -140,6 +162,8 @@ export interface FileRouteTypes {
     | '/_authenticated/tickets'
     | '/events/$eventId'
     | '/h/$hostSlug'
+    | '/invite/$token'
+    | '/_authenticated/hosts/new'
     | '/_authenticated/events/$eventId/edit'
     | '/_authenticated/hosts/$hostSlug/edit'
   fileRoutesById: FileRoutesById
@@ -150,6 +174,7 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   HHostSlugRoute: typeof HHostSlugRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -173,6 +198,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/h/$hostSlug': {
@@ -210,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/hosts/new': {
+      id: '/_authenticated/hosts/new'
+      path: '/hosts/new'
+      fullPath: '/hosts/new'
+      preLoaderRoute: typeof AuthenticatedHostsNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/hosts/$hostSlug/edit': {
       id: '/_authenticated/hosts/$hostSlug/edit'
       path: '/hosts/$hostSlug/edit'
@@ -231,6 +270,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMyEventsRoute: typeof AuthenticatedMyEventsRoute
   AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRoute
+  AuthenticatedHostsNewRoute: typeof AuthenticatedHostsNewRoute
   AuthenticatedEventsEventIdEditRoute: typeof AuthenticatedEventsEventIdEditRoute
   AuthenticatedHostsHostSlugEditRoute: typeof AuthenticatedHostsHostSlugEditRoute
 }
@@ -239,6 +279,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMyEventsRoute: AuthenticatedMyEventsRoute,
   AuthenticatedTicketsRoute: AuthenticatedTicketsRoute,
+  AuthenticatedHostsNewRoute: AuthenticatedHostsNewRoute,
   AuthenticatedEventsEventIdEditRoute: AuthenticatedEventsEventIdEditRoute,
   AuthenticatedHostsHostSlugEditRoute: AuthenticatedHostsHostSlugEditRoute,
 }
@@ -253,7 +294,18 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   HHostSlugRoute: HHostSlugRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
