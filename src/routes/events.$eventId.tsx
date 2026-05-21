@@ -4,10 +4,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { approveGalleryPhoto, rejectGalleryPhoto } from "@/lib/gallery.functions";
+import { ReportButton } from "@/components/ReportButton";
+import { FeedbackSection } from "@/components/FeedbackSection";
+
 
 export const Route = createFileRoute("/events/$eventId")({
   component: EventDetail,
@@ -126,11 +129,13 @@ function EventDetail() {
           <h1 className="mt-2 font-display text-4xl md:text-5xl">{event.title}</h1>
           <RsvpStatusChip status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} promoted={promoted} />
 
-          <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(event.start_at).toLocaleString()}</span>
             {event.location && <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" />{event.location}</span>}
             {event.capacity && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />Cap. {event.capacity}</span>}
+            {user && !isHost && <ReportButton target={{ kind: "event", eventId }} />}
           </div>
+
 
           {event.description && (
             <div className="mt-8 whitespace-pre-wrap text-base leading-relaxed text-foreground/90">
@@ -165,9 +170,11 @@ function EventDetail() {
       </div>
 
       <GallerySection eventId={eventId} isHost={!!isHost} />
+      {ended && rsvp?.status === "going" && <FeedbackSection eventId={eventId} />}
     </article>
   );
 }
+
 
 function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean }) {
   const { user } = useAuth();
@@ -182,13 +189,24 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("gallery_photos")
-        .select("id, url, public_path, status, uploaded_by, caption, created_at")
+        .select("id, url, public_path, status, uploaded_by, caption, created_at, hidden")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  async function hidePhoto(photoId: string) {
+    const { error } = await supabase
+      .from("gallery_photos")
+      .update({ hidden: true })
+      .eq("id", photoId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Hidden");
+    qc.invalidateQueries({ queryKey: ["gallery", eventId] });
+  }
+
 
   async function handleUpload(file: File) {
     if (!user) { toast.error("Sign in to upload"); return; }
@@ -217,8 +235,10 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
     }
   }
 
-  const approved = photos?.filter((p) => p.status === "approved") ?? [];
-  const pending = photos?.filter((p) => p.status !== "approved") ?? [];
+  const publicApproved = (photos ?? []).filter((p) => p.status === "approved" && !p.hidden);
+  const approved = (photos ?? []).filter((p) => p.status === "approved");
+  const pending = (photos ?? []).filter((p) => p.status === "pending");
+  const visibleApproved = isHost ? approved : publicApproved;
 
   return (
     <section className="mt-16 border-t pt-10">
@@ -245,15 +265,31 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
         )}
       </div>
 
-      {approved.length > 0 ? (
+      {visibleApproved.length > 0 ? (
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
-          {approved.map((p) => (
-            <img key={p.id} src={p.url} alt={p.caption ?? ""} className="aspect-square w-full rounded-lg object-cover" />
+          {visibleApproved.map((p) => (
+            <div key={p.id} className="group relative overflow-hidden rounded-lg">
+              <img src={p.url} alt={p.caption ?? ""} className={`aspect-square w-full object-cover ${p.hidden ? "opacity-40" : ""}`} />
+              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                {isHost && !p.hidden && (
+                  <Button size="icon" variant="secondary" onClick={() => hidePhoto(p.id)} title="Hide">
+                    <EyeOff className="h-4 w-4" />
+                  </Button>
+                )}
+                {user && p.uploaded_by !== user.id && (
+                  <ReportButton target={{ kind: "gallery_photo", eventId, photoId: p.id }} size="icon" variant="secondary" />
+                )}
+              </div>
+              {p.hidden && (
+                <span className="absolute left-1 top-1 rounded bg-background/90 px-2 py-0.5 text-xs">Hidden</span>
+              )}
+            </div>
           ))}
         </div>
       ) : (
         <p className="mt-6 text-sm text-muted-foreground">No photos yet.</p>
       )}
+
 
       {isHost && pending.length > 0 && (
         <div className="mt-10">
