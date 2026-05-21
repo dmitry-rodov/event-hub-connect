@@ -203,6 +203,50 @@ export type Database = {
           },
         ]
       }
+      host_invites: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          host_id: string
+          id: string
+          role: Database["public"]["Enums"]["host_role"]
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          host_id: string
+          id?: string
+          role?: Database["public"]["Enums"]["host_role"]
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          host_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["host_role"]
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_invites_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "hosts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       host_members: {
         Row: {
           created_at: string
