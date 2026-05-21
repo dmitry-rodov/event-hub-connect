@@ -157,6 +157,7 @@ export type Database = {
           caption: string | null
           created_at: string
           event_id: string
+          hidden: boolean
           id: string
           public_path: string | null
           status: Database["public"]["Enums"]["gallery_status"]
@@ -170,6 +171,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           event_id: string
+          hidden?: boolean
           id?: string
           public_path?: string | null
           status?: Database["public"]["Enums"]["gallery_status"]
@@ -183,6 +185,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           event_id?: string
+          hidden?: boolean
           id?: string
           public_path?: string | null
           status?: Database["public"]["Enums"]["gallery_status"]
