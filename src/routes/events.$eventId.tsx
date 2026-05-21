@@ -46,6 +46,16 @@ function EventDetail() {
     },
   });
 
+  // Detect promotion: previously waitlisted, now going
+  const [promoted, setPromoted] = useState(false);
+  const prevStatusRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const curr = rsvp?.status ?? null;
+    if (prev === "waitlist" && curr === "going") setPromoted(true);
+    prevStatusRef.current = curr;
+  }, [rsvp?.status]);
+
   const { data: isHost } = useQuery({
     queryKey: ["is-host", event?.host_id, user?.id],
     enabled: !!user && !!event?.host_id,
