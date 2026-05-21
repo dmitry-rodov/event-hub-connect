@@ -13,9 +13,10 @@ import {
   Calendar, Users, Hourglass, CheckCircle2, Pencil, Settings, ScanLine, Download, Shield,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  fetchHostedEvents, isPast, exportAttendeesCsv, type HostedEvent,
-} from "@/lib/hosted-events";
+import { useServerFn } from "@tanstack/react-start";
+import { fetchHostedEvents, isPast, type HostedEvent } from "@/lib/hosted-events";
+import { exportEventCsv } from "@/lib/event-export.functions";
+
 
 export const Route = createFileRoute("/_authenticated/my-events")({
   head: () => ({ meta: [{ title: "My Events — Gather" }] }),
