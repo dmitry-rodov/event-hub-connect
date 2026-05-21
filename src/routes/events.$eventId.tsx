@@ -189,13 +189,24 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("gallery_photos")
-        .select("id, url, public_path, status, uploaded_by, caption, created_at")
+        .select("id, url, public_path, status, uploaded_by, caption, created_at, hidden")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  async function hidePhoto(photoId: string) {
+    const { error } = await supabase
+      .from("gallery_photos")
+      .update({ hidden: true })
+      .eq("id", photoId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Hidden");
+    qc.invalidateQueries({ queryKey: ["gallery", eventId] });
+  }
+
 
   async function handleUpload(file: File) {
     if (!user) { toast.error("Sign in to upload"); return; }
