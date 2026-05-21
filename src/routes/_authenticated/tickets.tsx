@@ -1,28 +1,55 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
-import { Ticket } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, MapPin, Ticket as TicketIcon } from "lucide-react";
+import { buildIcs, downloadIcs } from "@/lib/ics";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/tickets")({
   head: () => ({ meta: [{ title: "My Tickets — Gather" }] }),
   component: MyTickets,
 });
 
+type TicketRow = {
+  id: string;
+  code: string;
+  issued_at: string;
+  event: {
+    id: string;
+    title: string;
+    start_at: string;
+    end_at: string | null;
+    location: string | null;
+    online_url: string | null;
+    description: string | null;
+    cover_image_url: string | null;
+  } | null;
+};
+
 function MyTickets() {
   const { user } = useAuth();
+  const nowIso = new Date().toISOString();
+
   const { data: tickets, isLoading } = useQuery({
     queryKey: ["my-tickets", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tickets")
-        .select("id, code, issued_at, event:events(id, title, start_at, location, cover_image_url)")
+        .select(
+          "id, code, issued_at, event:events!inner(id, title, start_at, end_at, location, online_url, description, cover_image_url)"
+        )
         .eq("user_id", user!.id)
-        .order("issued_at", { ascending: false });
+        .or(`end_at.gte.${nowIso},and(end_at.is.null,start_at.gte.${nowIso})`, {
+          referencedTable: "events",
+        })
+        .order("start_at", { ascending: true, referencedTable: "events" });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as TicketRow[];
     },
   });
 
@@ -31,31 +58,114 @@ function MyTickets() {
       <h1 className="font-display text-4xl">My Tickets</h1>
       <p className="mt-2 text-muted-foreground">Your passes for upcoming events.</p>
 
-      <div className="mt-8 space-y-4">
+      <div className="mt-8 space-y-6">
         {isLoading ? (
-          <div className="h-32 animate-pulse rounded-xl bg-muted" />
+          <div className="h-48 animate-pulse rounded-xl bg-muted" />
         ) : tickets && tickets.length > 0 ? (
-          tickets.map((t) => (
-            <Link key={t.id} to="/events/$eventId" params={{ eventId: t.event!.id }}>
-              <Card className="flex items-center gap-4 overflow-hidden p-0 transition-shadow hover:shadow-md">
-                <div className="aspect-square w-24 shrink-0 bg-gradient-to-br from-accent to-secondary">
-                  {t.event?.cover_image_url && <img src={t.event.cover_image_url} alt="" className="h-full w-full object-cover" />}
-                </div>
-                <div className="flex-1 py-4">
-                  <h3 className="font-display text-lg">{t.event?.title}</h3>
-                  <div className="text-xs text-muted-foreground">{t.event && new Date(t.event.start_at).toLocaleString()}</div>
-                  <div className="mt-1 font-mono text-xs text-primary">#{t.code.slice(0, 8)}</div>
-                </div>
-                <Ticket className="mr-5 h-5 w-5 text-muted-foreground" />
-              </Card>
-            </Link>
-          ))
+          tickets.map((t) => <TicketCard key={t.id} ticket={t} />)
         ) : (
           <div className="rounded-xl border border-dashed py-16 text-center text-muted-foreground">
-            No tickets yet. <Link to="/" className="text-primary underline">Explore events</Link>.
+            No upcoming tickets. <Link to="/" className="text-primary underline">Explore events</Link>.
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function TicketCard({ ticket }: { ticket: TicketRow }) {
+  const ev = ticket.event;
+  if (!ev) return null;
+
+  const startsAt = new Date(ev.start_at);
+  const locationLabel = ev.location ?? ev.online_url ?? null;
+
+  function handleAddToCalendar() {
+    const ics = buildIcs({
+      uid: `${ticket.id}@gather`,
+      title: ev!.title,
+      description: ev!.description,
+      location: ev!.location ?? ev!.online_url ?? null,
+      url: ev!.online_url ?? `${window.location.origin}/events/${ev!.id}`,
+      startAt: ev!.start_at,
+      endAt: ev!.end_at,
+    });
+    const safeTitle = ev!.title.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase() || "event";
+    downloadIcs(safeTitle, ics);
+  }
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(ticket.code);
+      toast.success("Code copied");
+    } catch {
+      toast.error("Could not copy");
+    }
+  }
+
+  return (
+    <Card className="overflow-hidden p-0">
+      <div className="flex flex-col gap-0 md:flex-row">
+        <Link
+          to="/events/$eventId"
+          params={{ eventId: ev.id }}
+          className="relative aspect-[16/9] w-full shrink-0 bg-gradient-to-br from-accent to-secondary md:aspect-square md:w-44"
+        >
+          {ev.cover_image_url && (
+            <img src={ev.cover_image_url} alt="" className="h-full w-full object-cover" />
+          )}
+        </Link>
+
+        <div className="flex flex-1 flex-col gap-4 p-5">
+          <div>
+            <Link to="/events/$eventId" params={{ eventId: ev.id }}>
+              <h3 className="font-display text-xl hover:underline">{ev.title}</h3>
+            </Link>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {startsAt.toLocaleString()}
+              </span>
+              {locationLabel && (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {locationLabel}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 rounded-lg border bg-muted/30 p-3">
+            <div className="shrink-0 rounded-md bg-background p-2">
+              <QRCodeSVG value={ticket.code} size={88} includeMargin={false} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Ticket code
+              </div>
+              <button
+                onClick={copyCode}
+                className="mt-1 break-all text-left font-mono text-sm font-semibold tracking-wider text-primary hover:underline"
+                title="Click to copy"
+              >
+                {ticket.code}
+              </button>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={handleAddToCalendar}>
+                  <Calendar className="mr-2 h-3.5 w-3.5" />
+                  Add to Calendar
+                </Button>
+                <Button size="sm" variant="ghost" asChild>
+                  <Link to="/events/$eventId" params={{ eventId: ev.id }}>
+                    <TicketIcon className="mr-2 h-3.5 w-3.5" />
+                    View event
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
