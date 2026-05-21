@@ -106,6 +106,25 @@ function MyEvents() {
 function EventCard({ ev }: { ev: HostedEvent }) {
   const past = isPast(ev);
   const isHost = ev.role === "host";
+  const exportFn = useServerFn(exportEventCsv);
+
+  async function doExport(kind: "rsvps" | "attendance") {
+    try {
+      const { filename, csv } = await exportFn({ data: { eventId: ev.id, kind } });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Export failed");
+    }
+  }
+
 
   return (
     <Card className="p-4">
