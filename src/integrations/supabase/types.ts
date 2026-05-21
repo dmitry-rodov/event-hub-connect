@@ -468,6 +468,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_rsvp: { Args: { _event_id: string }; Returns: Json }
       has_host_role: {
         Args: {
           _host_id: string
@@ -476,10 +477,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      increase_capacity: {
+        Args: { _event_id: string; _new_capacity: number }
+        Returns: Json
+      }
       is_host_member: {
         Args: { _host_id: string; _user_id: string }
         Returns: boolean
       }
+      rsvp_event: { Args: { _event_id: string }; Returns: Json }
     }
     Enums: {
       event_status: "draft" | "published" | "cancelled" | "completed"
