@@ -124,6 +124,7 @@ function EventDetail() {
             </Link>
           )}
           <h1 className="mt-2 font-display text-4xl md:text-5xl">{event.title}</h1>
+          <RsvpStatusChip status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} promoted={promoted} />
 
           <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(event.start_at).toLocaleString()}</span>
