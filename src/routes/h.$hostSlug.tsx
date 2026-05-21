@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
-import { Calendar, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Globe, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/h/$hostSlug")({
   component: HostPage,
@@ -10,12 +12,28 @@ export const Route = createFileRoute("/h/$hostSlug")({
 
 function HostPage() {
   const { hostSlug } = Route.useParams();
+  const { user } = useAuth();
   const { data: host, isLoading } = useQuery({
     queryKey: ["host", hostSlug],
     queryFn: async () => {
       const { data, error } = await supabase.from("hosts").select("*").eq("slug", hostSlug).maybeSingle();
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: isHost } = useQuery({
+    queryKey: ["is-host-of", host?.id, user?.id],
+    enabled: !!user && !!host?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("host_members")
+        .select("role")
+        .eq("host_id", host!.id)
+        .eq("user_id", user!.id)
+        .eq("role", "host")
+        .maybeSingle();
+      return !!data;
     },
   });
 
@@ -44,15 +62,27 @@ function HostPage() {
       </div>
 
       <div className="mt-6 flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="font-display text-4xl">{host.name}</h1>
-          {host.description && <p className="mt-2 max-w-xl text-muted-foreground">{host.description}</p>}
-          {host.website && (
-            <a href={host.website} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline">
-              <Globe className="h-3 w-3" /> {host.website}
-            </a>
+        <div className="flex items-end gap-4">
+          {host.avatar_url && (
+            <img src={host.avatar_url} alt="" className="-mt-12 h-24 w-24 rounded-2xl border-4 border-background object-cover shadow" />
           )}
+          <div>
+            <h1 className="font-display text-4xl">{host.name}</h1>
+            {host.description && <p className="mt-2 max-w-xl text-muted-foreground">{host.description}</p>}
+            {host.website && (
+              <a href={host.website} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                <Globe className="h-3 w-3" /> {host.website}
+              </a>
+            )}
+          </div>
         </div>
+        {isHost && (
+          <Button asChild variant="outline" size="sm">
+            <Link to="/hosts/$hostSlug/edit" params={{ hostSlug }}>
+              <Pencil className="mr-2 h-3 w-3" /> Edit host
+            </Link>
+          </Button>
+        )}
       </div>
 
       <h2 className="mt-12 mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">Events</h2>
