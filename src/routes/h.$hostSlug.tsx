@@ -77,11 +77,18 @@ function HostPage() {
           </div>
         </div>
         {isHost && (
-          <Button asChild variant="outline" size="sm">
-            <Link to="/hosts/$hostSlug/edit" params={{ hostSlug }}>
-              <Pencil className="mr-2 h-3 w-3" /> Edit host
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/hosts/$hostSlug/edit" params={{ hostSlug }}>
+                <Pencil className="mr-2 h-3 w-3" /> Edit host
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/hosts/$hostSlug/events/new" params={{ hostSlug }}>
+                + New event
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 
