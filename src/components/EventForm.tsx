@@ -156,27 +156,20 @@ export function EventForm({ initial, submitting, submitLabel = "Save", onSubmit 
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label>Visibility</Label>
-          <Select value={values.visibility} onValueChange={(v) => set("visibility", v as any)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="public">Public — listed in Explore</SelectItem>
-              <SelectItem value="unlisted">Unlisted — link only</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>State</Label>
-          <Select value={values.status} onValueChange={(v) => set("status", v as any)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div>
+        <Label>Visibility</Label>
+        <Select value={values.visibility} onValueChange={(v) => set("visibility", v as any)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="public">Public — listed in Explore</SelectItem>
+            <SelectItem value="unlisted">Unlisted — link only</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {values.status === "published"
+            ? "Currently published. Use the Unpublish button above to take it offline."
+            : "Currently a draft. Use the Publish button above to make it live."}
+        </p>
       </div>
 
       <div className="flex items-center justify-between rounded-lg border p-4">
