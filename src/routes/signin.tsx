@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth";
@@ -8,14 +9,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+const searchSchema = z.object({
+  redirect: z.string().optional(),
+});
+
 export const Route = createFileRoute("/signin")({
   head: () => ({ meta: [{ title: "Sign in — Gather" }] }),
+  validateSearch: searchSchema,
   component: SignIn,
 });
+
+function safeRedirect(value: string | undefined): string {
+  if (!value) return "/";
+  // only allow internal paths
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  return "/";
+}
 
 function SignIn() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const redirectTo = safeRedirect(search.redirect);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,8 +38,8 @@ function SignIn() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/" });
-  }, [user, navigate]);
+    if (user) navigate({ to: redirectTo });
+  }, [user, navigate, redirectTo]);
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -33,7 +48,10 @@ function SignIn() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin, data: { display_name: name } },
+          options: {
+            emailRedirectTo: `${window.location.origin}${redirectTo}`,
+            data: { display_name: name },
+          },
         });
         if (error) throw error;
         toast.success("Check your inbox to confirm your email.");
@@ -49,7 +67,9 @@ function SignIn() {
   }
 
   async function handleGoogle() {
-    const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    const res = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}${redirectTo}`,
+    });
     if (res.error) toast.error(res.error.message ?? "Google sign-in failed");
   }
 

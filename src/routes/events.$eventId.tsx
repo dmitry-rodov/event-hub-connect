@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { approveGalleryPhoto, rejectGalleryPhoto } from "@/lib/gallery.functions";
 
 export const Route = createFileRoute("/events/$eventId")({
@@ -46,6 +46,16 @@ function EventDetail() {
     },
   });
 
+  // Detect promotion: previously waitlisted, now going
+  const [promoted, setPromoted] = useState(false);
+  const prevStatusRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const curr = rsvp?.status ?? null;
+    if (prev === "waitlist" && curr === "going") setPromoted(true);
+    prevStatusRef.current = curr;
+  }, [rsvp?.status]);
+
   const { data: isHost } = useQuery({
     queryKey: ["is-host", event?.host_id, user?.id],
     enabled: !!user && !!event?.host_id,
@@ -62,7 +72,10 @@ function EventDetail() {
   });
 
   async function handleRsvp() {
-    if (!user) { navigate({ to: "/signin" }); return; }
+    if (!user) {
+      navigate({ to: "/signin", search: { redirect: `/events/${eventId}` } });
+      return;
+    }
     const { data, error } = await supabase.rpc("rsvp_event" as any, { _event_id: eventId });
     if (error) { toast.error(error.message); return; }
     const status = (data as any)?.status;
@@ -111,6 +124,7 @@ function EventDetail() {
             </Link>
           )}
           <h1 className="mt-2 font-display text-4xl md:text-5xl">{event.title}</h1>
+          <RsvpStatusChip status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} promoted={promoted} />
 
           <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(event.start_at).toLocaleString()}</span>
@@ -327,5 +341,39 @@ function PendingTile({
         </Button>
       </div>
     </div>
+  );
+}
+
+function RsvpStatusChip({
+  status,
+  queuePosition,
+  promoted,
+}: {
+  status: string | undefined;
+  queuePosition: number | null;
+  promoted: boolean;
+}) {
+  if (!status) return null;
+  let label = "";
+  let cls = "";
+  if (promoted && status === "going") {
+    label = "Promoted from waitlist 🎉";
+    cls = "bg-primary/15 text-primary border-primary/30";
+  } else if (status === "going") {
+    label = "Going";
+    cls = "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
+  } else if (status === "waitlist") {
+    label = `Waitlisted${queuePosition ? ` · #${queuePosition}` : ""}`;
+    cls = "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30";
+  } else if (status === "cancelled") {
+    label = "Cancelled";
+    cls = "bg-muted text-muted-foreground border-border";
+  } else {
+    return null;
+  }
+  return (
+    <span className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${cls}`}>
+      {label}
+    </span>
   );
 }
