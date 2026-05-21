@@ -152,26 +152,41 @@ export type Database = {
       }
       gallery_photos: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           caption: string | null
           created_at: string
           event_id: string
           id: string
+          public_path: string | null
+          status: Database["public"]["Enums"]["gallery_status"]
+          storage_path: string | null
           uploaded_by: string
           url: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           caption?: string | null
           created_at?: string
           event_id: string
           id?: string
+          public_path?: string | null
+          status?: Database["public"]["Enums"]["gallery_status"]
+          storage_path?: string | null
           uploaded_by: string
           url: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           caption?: string | null
           created_at?: string
           event_id?: string
           id?: string
+          public_path?: string | null
+          status?: Database["public"]["Enums"]["gallery_status"]
+          storage_path?: string | null
           uploaded_by?: string
           url?: string
         }
@@ -419,6 +434,7 @@ export type Database = {
     Enums: {
       event_status: "draft" | "published" | "cancelled" | "completed"
       event_visibility: "public" | "unlisted" | "private"
+      gallery_status: "pending" | "approved" | "rejected"
       host_role: "host" | "checker"
       rsvp_status: "going" | "interested" | "not_going"
     }
@@ -550,6 +566,7 @@ export const Constants = {
     Enums: {
       event_status: ["draft", "published", "cancelled", "completed"],
       event_visibility: ["public", "unlisted", "private"],
+      gallery_status: ["pending", "approved", "rejected"],
       host_role: ["host", "checker"],
       rsvp_status: ["going", "interested", "not_going"],
     },

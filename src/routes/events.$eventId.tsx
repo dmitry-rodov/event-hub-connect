@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useRef, useState } from "react";
+import { approveGalleryPhoto, rejectGalleryPhoto } from "@/lib/gallery.functions";
 
 export const Route = createFileRoute("/events/$eventId")({
   component: EventDetail,
@@ -43,6 +46,21 @@ function EventDetail() {
     },
   });
 
+  const { data: isHost } = useQuery({
+    queryKey: ["is-host", event?.host_id, user?.id],
+    enabled: !!user && !!event?.host_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("host_members")
+        .select("role")
+        .eq("host_id", event!.host_id)
+        .eq("user_id", user!.id)
+        .eq("role", "host")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
   async function handleRsvp() {
     if (!user) { navigate({ to: "/signin" }); return; }
     const { error } = await supabase.from("rsvps").upsert(
@@ -63,8 +81,15 @@ function EventDetail() {
 
   return (
     <article className="mx-auto max-w-4xl px-6 py-10">
-      <div className="aspect-[16/9] overflow-hidden rounded-2xl bg-gradient-to-br from-accent to-secondary">
+      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-gradient-to-br from-accent to-secondary">
         {event.cover_image_url && <img src={event.cover_image_url} alt={event.title} className="h-full w-full object-cover" />}
+        {isHost && (
+          <Button asChild size="sm" variant="secondary" className="absolute right-3 top-3">
+            <Link to="/events/$eventId/edit" params={{ eventId }}>
+              <Pencil className="mr-2 h-3 w-3" /> Edit
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="mt-8 grid gap-10 md:grid-cols-3">
@@ -99,6 +124,183 @@ function EventDetail() {
           </div>
         </aside>
       </div>
+
+      <GallerySection eventId={eventId} isHost={!!isHost} />
     </article>
+  );
+}
+
+function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const approve = useServerFn(approveGalleryPhoto);
+  const reject = useServerFn(rejectGalleryPhoto);
+
+  const { data: photos } = useQuery({
+    queryKey: ["gallery", eventId, user?.id, isHost],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("gallery_photos")
+        .select("id, url, public_path, status, uploaded_by, caption, created_at")
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  async function handleUpload(file: File) {
+    if (!user) { toast.error("Sign in to upload"); return; }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/${eventId}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("gallery-uploads")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      const { error: insErr } = await supabase.from("gallery_photos").insert({
+        event_id: eventId,
+        uploaded_by: user.id,
+        storage_path: path,
+        url: "", // not visible until approved
+        status: "pending",
+      });
+      if (insErr) throw insErr;
+      toast.success("Photo submitted — pending host approval");
+      qc.invalidateQueries({ queryKey: ["gallery", eventId] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const approved = photos?.filter((p) => p.status === "approved") ?? [];
+  const pending = photos?.filter((p) => p.status !== "approved") ?? [];
+
+  return (
+    <section className="mt-16 border-t pt-10">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl">Gallery</h2>
+        {user && (
+          <>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleUpload(f);
+                e.target.value = "";
+              }}
+            />
+            <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              Share a photo
+            </Button>
+          </>
+        )}
+      </div>
+
+      {approved.length > 0 ? (
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
+          {approved.map((p) => (
+            <img key={p.id} src={p.url} alt={p.caption ?? ""} className="aspect-square w-full rounded-lg object-cover" />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-6 text-sm text-muted-foreground">No photos yet.</p>
+      )}
+
+      {isHost && pending.length > 0 && (
+        <div className="mt-10">
+          <h3 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+            Pending approval ({pending.length})
+          </h3>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            {pending.map((p) => (
+              <PendingTile
+                key={p.id}
+                photoId={p.id}
+                storagePath={p.public_path /* placeholder */}
+                onApprove={async () => {
+                  await approve({ data: { photoId: p.id } });
+                  toast.success("Approved");
+                  qc.invalidateQueries({ queryKey: ["gallery", eventId] });
+                }}
+                onReject={async () => {
+                  await reject({ data: { photoId: p.id } });
+                  toast.success("Rejected");
+                  qc.invalidateQueries({ queryKey: ["gallery", eventId] });
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PendingTile({
+  photoId,
+  onApprove,
+  onReject,
+}: {
+  photoId: string;
+  storagePath: string | null;
+  onApprove: () => Promise<void>;
+  onReject: () => Promise<void>;
+}) {
+  const { data: signed } = useQuery({
+    queryKey: ["pending-photo-signed", photoId],
+    queryFn: async () => {
+      // fetch storage_path directly
+      const { data: row } = await supabase
+        .from("gallery_photos")
+        .select("storage_path")
+        .eq("id", photoId)
+        .maybeSingle();
+      if (!row?.storage_path) return null;
+      const { data } = await supabase.storage
+        .from("gallery-uploads")
+        .createSignedUrl(row.storage_path, 60 * 10);
+      return data?.signedUrl ?? null;
+    },
+  });
+
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="relative overflow-hidden rounded-lg border">
+      {signed ? (
+        <img src={signed} alt="" className="aspect-square w-full object-cover" />
+      ) : (
+        <div className="aspect-square w-full animate-pulse bg-muted" />
+      )}
+      <div className="absolute inset-x-0 bottom-0 flex gap-1 bg-background/90 p-2 backdrop-blur">
+        <Button
+          size="sm"
+          variant="default"
+          className="flex-1"
+          disabled={busy}
+          onClick={async () => { setBusy(true); try { await onApprove(); } finally { setBusy(false); } }}
+        >
+          <Check className="mr-1 h-3 w-3" /> Approve
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1"
+          disabled={busy}
+          onClick={async () => { setBusy(true); try { await onReject(); } finally { setBusy(false); } }}
+        >
+          <X className="mr-1 h-3 w-3" /> Reject
+        </Button>
+      </div>
+    </div>
   );
 }
