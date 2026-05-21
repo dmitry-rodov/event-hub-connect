@@ -80,6 +80,20 @@ function EventDetail() {
     },
   });
 
+  const { data: ticket } = useQuery({
+    queryKey: ["ticket", eventId, user?.id],
+    enabled: !!user && rsvp?.status === "going",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tickets")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data as { id: string } | null;
+    },
+  });
+
   // Detect promotion: previously waitlisted, now going
   const [promoted, setPromoted] = useState(false);
   const prevStatusRef = useRef<string | null | undefined>(undefined);
