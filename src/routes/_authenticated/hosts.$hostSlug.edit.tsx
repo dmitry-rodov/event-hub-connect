@@ -44,9 +44,9 @@ function EditHost() {
           currentUrl={host.avatar_url}
           label="Upload logo"
           onUploaded={async ({ publicUrl }) => {
-            if (!user) return navigate({ to: "/signin" });
+            if (!user) { navigate({ to: "/signin" }); return; }
             const { error } = await supabase.from("hosts").update({ avatar_url: publicUrl }).eq("id", host.id);
-            if (error) return toast.error(error.message);
+            if (error) { toast.error(error.message); return; }
             qc.invalidateQueries({ queryKey: ["host", hostSlug] });
           }}
         />

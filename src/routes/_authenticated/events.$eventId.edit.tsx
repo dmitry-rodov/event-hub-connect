@@ -41,7 +41,7 @@ function EditEvent() {
           label="Upload cover"
           onUploaded={async ({ publicUrl }) => {
             const { error } = await supabase.from("events").update({ cover_image_url: publicUrl }).eq("id", event.id);
-            if (error) return toast.error(error.message);
+            if (error) { toast.error(error.message); return; }
             qc.invalidateQueries({ queryKey: ["event", eventId] });
           }}
         />
