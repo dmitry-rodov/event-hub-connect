@@ -104,7 +104,7 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
   }
 
   return (
-    <Card className="overflow-hidden p-0">
+    <Card id={`ticket-${ticket.id}`} className="scroll-mt-24 overflow-hidden p-0 ring-primary/40 target:ring-2">
       <div className="flex flex-col gap-0 md:flex-row">
         <Link
           to="/events/$eventId"
