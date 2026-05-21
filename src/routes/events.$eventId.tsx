@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { approveGalleryPhoto, rejectGalleryPhoto } from "@/lib/gallery.functions";
 
 export const Route = createFileRoute("/events/$eventId")({
