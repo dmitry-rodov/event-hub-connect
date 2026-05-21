@@ -38,11 +38,11 @@ function EventDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("rsvps")
-        .select("status")
+        .select("status, queue_position")
         .eq("event_id", eventId)
         .eq("user_id", user!.id)
         .maybeSingle();
-      return data;
+      return data as { status: string; queue_position: number | null } | null;
     },
   });
 
