@@ -235,8 +235,10 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
     }
   }
 
-  const approved = photos?.filter((p) => p.status === "approved") ?? [];
-  const pending = photos?.filter((p) => p.status !== "approved") ?? [];
+  const publicApproved = (photos ?? []).filter((p) => p.status === "approved" && !p.hidden);
+  const approved = (photos ?? []).filter((p) => p.status === "approved");
+  const pending = (photos ?? []).filter((p) => p.status === "pending");
+  const visibleApproved = isHost ? approved : publicApproved;
 
   return (
     <section className="mt-16 border-t pt-10">
@@ -263,15 +265,31 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
         )}
       </div>
 
-      {approved.length > 0 ? (
+      {visibleApproved.length > 0 ? (
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
-          {approved.map((p) => (
-            <img key={p.id} src={p.url} alt={p.caption ?? ""} className="aspect-square w-full rounded-lg object-cover" />
+          {visibleApproved.map((p) => (
+            <div key={p.id} className="group relative overflow-hidden rounded-lg">
+              <img src={p.url} alt={p.caption ?? ""} className={`aspect-square w-full object-cover ${p.hidden ? "opacity-40" : ""}`} />
+              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                {isHost && !p.hidden && (
+                  <Button size="icon" variant="secondary" onClick={() => hidePhoto(p.id)} title="Hide">
+                    <EyeOff className="h-4 w-4" />
+                  </Button>
+                )}
+                {user && p.uploaded_by !== user.id && (
+                  <ReportButton target={{ kind: "gallery_photo", eventId, photoId: p.id }} size="icon" variant="secondary" />
+                )}
+              </div>
+              {p.hidden && (
+                <span className="absolute left-1 top-1 rounded bg-background/90 px-2 py-0.5 text-xs">Hidden</span>
+              )}
+            </div>
           ))}
         </div>
       ) : (
         <p className="mt-6 text-sm text-muted-foreground">No photos yet.</p>
       )}
+
 
       {isHost && pending.length > 0 && (
         <div className="mt-10">
