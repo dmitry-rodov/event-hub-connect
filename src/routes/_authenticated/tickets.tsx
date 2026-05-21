@@ -32,7 +32,6 @@ type TicketRow = {
 
 function MyTickets() {
   const { user } = useAuth();
-  const nowIso = new Date().toISOString();
 
   const { data: tickets, isLoading } = useQuery({
     queryKey: ["my-tickets", user?.id],
@@ -43,13 +42,17 @@ function MyTickets() {
         .select(
           "id, code, issued_at, event:events!inner(id, title, start_at, end_at, location, online_url, description, cover_image_url)"
         )
-        .eq("user_id", user!.id)
-        .or(`end_at.gte.${nowIso},and(end_at.is.null,start_at.gte.${nowIso})`, {
-          referencedTable: "events",
-        })
-        .order("start_at", { ascending: true, referencedTable: "events" });
+        .eq("user_id", user!.id);
       if (error) throw error;
-      return (data ?? []) as unknown as TicketRow[];
+      const now = Date.now();
+      const rows = (data ?? []) as unknown as TicketRow[];
+      return rows
+        .filter((t) => {
+          if (!t.event) return false;
+          const endsAt = t.event.end_at ? new Date(t.event.end_at).getTime() : new Date(t.event.start_at).getTime();
+          return endsAt >= now;
+        })
+        .sort((a, b) => new Date(a.event!.start_at).getTime() - new Date(b.event!.start_at).getTime());
     },
   });
 
