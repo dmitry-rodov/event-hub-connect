@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -177,22 +177,13 @@ export function EventForm({ initial, submitting, submitLabel = "Save", onSubmit 
         </div>
       </div>
 
-      <TooltipProvider>
-        <div className="flex items-center justify-between rounded-lg border p-4">
-          <div>
-            <Label>Paid event</Label>
-            <p className="text-xs text-muted-foreground">Charge attendees a ticket fee.</p>
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Switch checked={values.is_paid} disabled onCheckedChange={() => {}} />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Coming soon</TooltipContent>
-          </Tooltip>
+      <div className="flex items-center justify-between rounded-lg border p-4">
+        <div>
+          <Label>Paid event</Label>
+          <p className="text-xs text-muted-foreground">Charge attendees a ticket fee.</p>
         </div>
-      </TooltipProvider>
+        <Switch checked={values.is_paid} onCheckedChange={(v) => set("is_paid", v)} />
+      </div>
 
       <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : submitLabel}</Button>
     </form>
