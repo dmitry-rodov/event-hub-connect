@@ -85,7 +85,7 @@ function EventDetail() {
         {event.cover_image_url && <img src={event.cover_image_url} alt={event.title} className="h-full w-full object-cover" />}
         {isHost && (
           <Button asChild size="sm" variant="secondary" className="absolute right-3 top-3">
-            <Link to="/_authenticated/events/$eventId/edit" params={{ eventId }}>
+            <Link to="/events/$eventId/edit" params={{ eventId }}>
               <Pencil className="mr-2 h-3 w-3" /> Edit
             </Link>
           </Button>
