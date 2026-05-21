@@ -56,7 +56,7 @@ function NewEvent() {
               online_url: v.venue_type === "online" ? v.online_url : null,
               visibility: v.visibility,
               status: v.status,
-              is_paid: false,
+              is_paid: v.is_paid,
             };
             const { data, error } = await supabase.from("events").insert(payload).select("id").single();
             setSubmitting(false);
