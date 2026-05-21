@@ -80,6 +80,20 @@ function EventDetail() {
     },
   });
 
+  const { data: ticket } = useQuery({
+    queryKey: ["ticket", eventId, user?.id],
+    enabled: !!user && rsvp?.status === "going",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tickets")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data as { id: string } | null;
+    },
+  });
+
   // Detect promotion: previously waitlisted, now going
   const [promoted, setPromoted] = useState(false);
   const prevStatusRef = useRef<string | null | undefined>(undefined);
@@ -182,8 +196,11 @@ function EventDetail() {
               <p className="mt-3 text-sm text-muted-foreground">This event has ended.</p>
             ) : rsvp?.status === "going" ? (
               <>
-                <p className="mt-3 text-sm font-medium">You're going 🎉</p>
-                <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Cancel RSVP</Button>
+                <p className="mt-3 text-sm font-medium">You're already going 🎉</p>
+                <Button asChild className="mt-3 w-full" size="sm">
+                  <Link to="/tickets" hash={ticket?.id ? `ticket-${ticket.id}` : undefined}>View ticket</Link>
+                </Button>
+                <Button onClick={handleCancel} variant="outline" className="mt-2 w-full" size="sm">Cancel RSVP</Button>
               </>
             ) : rsvp?.status === "waitlist" ? (
               <>
