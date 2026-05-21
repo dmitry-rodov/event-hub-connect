@@ -79,10 +79,18 @@ function EventDetail() {
   if (isLoading) return <div className="mx-auto max-w-4xl px-6 py-12"><div className="h-96 animate-pulse rounded-xl bg-muted" /></div>;
   if (!event) return <div className="mx-auto max-w-4xl px-6 py-12">Event not found.</div>;
 
+  const endsAt = event.end_at ? new Date(event.end_at).getTime() : new Date(event.start_at).getTime();
+  const ended = endsAt < Date.now();
+
   return (
     <article className="mx-auto max-w-4xl px-6 py-10">
       <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-gradient-to-br from-accent to-secondary">
         {event.cover_image_url && <img src={event.cover_image_url} alt={event.title} className="h-full w-full object-cover" />}
+        {ended && (
+          <span className="absolute left-3 top-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-foreground shadow">
+            Ended
+          </span>
+        )}
         {isHost && (
           <Button asChild size="sm" variant="secondary" className="absolute right-3 top-3">
             <Link to="/events/$eventId/edit" params={{ eventId }}>
@@ -117,10 +125,16 @@ function EventDetail() {
         <aside className="space-y-4">
           <div className="rounded-xl border bg-card p-5">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">RSVP</div>
-            <Button onClick={handleRsvp} className="mt-3 w-full" size="lg" disabled={rsvp?.status === "going"}>
-              {rsvp?.status === "going" ? "You're going" : "I'm going"}
-            </Button>
-            {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to RSVP and get your ticket.</p>}
+            {ended ? (
+              <p className="mt-3 text-sm text-muted-foreground">This event has ended.</p>
+            ) : (
+              <>
+                <Button onClick={handleRsvp} className="mt-3 w-full" size="lg" disabled={rsvp?.status === "going"}>
+                  {rsvp?.status === "going" ? "You're going" : "I'm going"}
+                </Button>
+                {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to RSVP and get your ticket.</p>}
+              </>
+            )}
           </div>
         </aside>
       </div>
