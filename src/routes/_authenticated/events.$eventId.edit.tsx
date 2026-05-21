@@ -147,7 +147,7 @@ function EditEvent() {
               online_url: v.venue_type === "online" ? v.online_url : null,
               visibility: v.visibility,
               status: v.status,
-              is_paid: false,
+              is_paid: v.is_paid,
             };
             const { error } = await supabase.from("events").update(update).eq("id", eventId);
             setSubmitting(false);
