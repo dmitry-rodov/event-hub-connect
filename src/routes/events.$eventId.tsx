@@ -38,11 +38,11 @@ function EventDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("rsvps")
-        .select("status")
+        .select("status, queue_position")
         .eq("event_id", eventId)
         .eq("user_id", user!.id)
         .maybeSingle();
-      return data;
+      return data as { status: string; queue_position: number | null } | null;
     },
   });
 
@@ -63,16 +63,19 @@ function EventDetail() {
 
   async function handleRsvp() {
     if (!user) { navigate({ to: "/signin" }); return; }
-    const { error } = await supabase.from("rsvps").upsert(
-      { event_id: eventId, user_id: user.id, status: "going" },
-      { onConflict: "event_id,user_id" }
-    );
+    const { data, error } = await supabase.rpc("rsvp_event" as any, { _event_id: eventId });
     if (error) { toast.error(error.message); return; }
-    await supabase.from("tickets").upsert(
-      { event_id: eventId, user_id: user.id },
-      { onConflict: "event_id,user_id" }
-    );
-    toast.success("You're going!");
+    const status = (data as any)?.status;
+    const pos = (data as any)?.queue_position;
+    toast.success(status === "going" ? "You're going!" : `You're on the waitlist (#${pos})`);
+    qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
+  }
+
+  async function handleCancel() {
+    if (!user) return;
+    const { error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: eventId });
+    if (error) { toast.error(error.message); return; }
+    toast.success("RSVP cancelled");
     qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
   }
 
@@ -127,11 +130,19 @@ function EventDetail() {
             <div className="text-xs uppercase tracking-wider text-muted-foreground">RSVP</div>
             {ended ? (
               <p className="mt-3 text-sm text-muted-foreground">This event has ended.</p>
+            ) : rsvp?.status === "going" ? (
+              <>
+                <p className="mt-3 text-sm font-medium">You're going 🎉</p>
+                <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Cancel RSVP</Button>
+              </>
+            ) : rsvp?.status === "waitlist" ? (
+              <>
+                <p className="mt-3 text-sm">On the waitlist — position <span className="font-medium">#{rsvp.queue_position ?? "?"}</span></p>
+                <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Leave waitlist</Button>
+              </>
             ) : (
               <>
-                <Button onClick={handleRsvp} className="mt-3 w-full" size="lg" disabled={rsvp?.status === "going"}>
-                  {rsvp?.status === "going" ? "You're going" : "I'm going"}
-                </Button>
+                <Button onClick={handleRsvp} className="mt-3 w-full" size="lg">I'm going</Button>
                 {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to RSVP and get your ticket.</p>}
               </>
             )}

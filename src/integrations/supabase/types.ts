@@ -398,6 +398,7 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          queue_position: number | null
           status: Database["public"]["Enums"]["rsvp_status"]
           updated_at: string
           user_id: string
@@ -406,6 +407,7 @@ export type Database = {
           created_at?: string
           event_id: string
           id?: string
+          queue_position?: number | null
           status?: Database["public"]["Enums"]["rsvp_status"]
           updated_at?: string
           user_id: string
@@ -414,6 +416,7 @@ export type Database = {
           created_at?: string
           event_id?: string
           id?: string
+          queue_position?: number | null
           status?: Database["public"]["Enums"]["rsvp_status"]
           updated_at?: string
           user_id?: string
@@ -465,6 +468,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_rsvp: { Args: { _event_id: string }; Returns: Json }
       has_host_role: {
         Args: {
           _host_id: string
@@ -473,17 +477,27 @@ export type Database = {
         }
         Returns: boolean
       }
+      increase_capacity: {
+        Args: { _event_id: string; _new_capacity: number }
+        Returns: Json
+      }
       is_host_member: {
         Args: { _host_id: string; _user_id: string }
         Returns: boolean
       }
+      rsvp_event: { Args: { _event_id: string }; Returns: Json }
     }
     Enums: {
       event_status: "draft" | "published" | "cancelled" | "completed"
       event_visibility: "public" | "unlisted" | "private"
       gallery_status: "pending" | "approved" | "rejected"
       host_role: "host" | "checker"
-      rsvp_status: "going" | "interested" | "not_going"
+      rsvp_status:
+        | "going"
+        | "interested"
+        | "not_going"
+        | "waitlist"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -615,7 +629,13 @@ export const Constants = {
       event_visibility: ["public", "unlisted", "private"],
       gallery_status: ["pending", "approved", "rejected"],
       host_role: ["host", "checker"],
-      rsvp_status: ["going", "interested", "not_going"],
+      rsvp_status: [
+        "going",
+        "interested",
+        "not_going",
+        "waitlist",
+        "cancelled",
+      ],
     },
   },
 } as const
