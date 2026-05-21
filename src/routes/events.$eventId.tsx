@@ -14,6 +14,37 @@ import { FeedbackSection } from "@/components/FeedbackSection";
 
 export const Route = createFileRoute("/events/$eventId")({
   component: EventDetail,
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("events")
+      .select("title, description, cover_image_url, start_at, location")
+      .eq("id", params.eventId)
+      .maybeSingle();
+    return { event: data };
+  },
+  head: ({ loaderData, params }) => {
+    const e = loaderData?.event;
+    const title = e?.title ? `${e.title} — Events` : "Event";
+    const descRaw = e?.description ?? (e?.location ? `Join us at ${e.location}` : "Event details, RSVP and tickets.");
+    const description = descRaw.slice(0, 160);
+    const url = `/events/${params.eventId}`;
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:type", content: "article" },
+      { property: "og:url", content: url },
+      { name: "twitter:card", content: e?.cover_image_url ? "summary_large_image" : "summary" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ];
+    if (e?.cover_image_url) {
+      meta.push({ property: "og:image", content: e.cover_image_url });
+      meta.push({ name: "twitter:image", content: e.cover_image_url });
+    }
+    return { meta, links: [{ rel: "canonical", href: url }] };
+  },
 });
 
 function EventDetail() {
