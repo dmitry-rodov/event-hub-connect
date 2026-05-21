@@ -67,6 +67,7 @@ export function EventForm({ initial, submitting, submitLabel = "Save", onSubmit 
         if (!errs[k]) errs[k] = issue.message;
       }
       setErrors(errs);
+      toast.error(Object.values(errs)[0] ?? "Please fix the errors in the form");
       return;
     }
     setErrors({});
