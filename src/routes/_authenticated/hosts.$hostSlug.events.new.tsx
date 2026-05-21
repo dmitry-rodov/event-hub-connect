@@ -41,7 +41,7 @@ function NewEvent() {
           onSubmit={async (v) => {
             if (!user) return;
             setSubmitting(true);
-            const { data, error } = await supabase.from("events").insert({
+            const payload: any = {
               host_id: host.id,
               created_by: user.id,
               title: v.title,
@@ -57,7 +57,8 @@ function NewEvent() {
               visibility: v.visibility,
               status: v.status,
               is_paid: false,
-            }).select("id").single();
+            };
+            const { data, error } = await supabase.from("events").insert(payload).select("id").single();
             setSubmitting(false);
             if (error) { toast.error(error.message); return; }
             toast.success("Event created");
