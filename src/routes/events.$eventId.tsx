@@ -130,11 +130,19 @@ function EventDetail() {
             <div className="text-xs uppercase tracking-wider text-muted-foreground">RSVP</div>
             {ended ? (
               <p className="mt-3 text-sm text-muted-foreground">This event has ended.</p>
+            ) : rsvp?.status === "going" ? (
+              <>
+                <p className="mt-3 text-sm font-medium">You're going 🎉</p>
+                <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Cancel RSVP</Button>
+              </>
+            ) : rsvp?.status === "waitlist" ? (
+              <>
+                <p className="mt-3 text-sm">On the waitlist — position <span className="font-medium">#{rsvp.queue_position ?? "?"}</span></p>
+                <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Leave waitlist</Button>
+              </>
             ) : (
               <>
-                <Button onClick={handleRsvp} className="mt-3 w-full" size="lg" disabled={rsvp?.status === "going"}>
-                  {rsvp?.status === "going" ? "You're going" : "I'm going"}
-                </Button>
+                <Button onClick={handleRsvp} className="mt-3 w-full" size="lg">I'm going</Button>
                 {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to RSVP and get your ticket.</p>}
               </>
             )}
