@@ -63,16 +63,19 @@ function EventDetail() {
 
   async function handleRsvp() {
     if (!user) { navigate({ to: "/signin" }); return; }
-    const { error } = await supabase.from("rsvps").upsert(
-      { event_id: eventId, user_id: user.id, status: "going" },
-      { onConflict: "event_id,user_id" }
-    );
+    const { data, error } = await supabase.rpc("rsvp_event" as any, { _event_id: eventId });
     if (error) { toast.error(error.message); return; }
-    await supabase.from("tickets").upsert(
-      { event_id: eventId, user_id: user.id },
-      { onConflict: "event_id,user_id" }
-    );
-    toast.success("You're going!");
+    const status = (data as any)?.status;
+    const pos = (data as any)?.queue_position;
+    toast.success(status === "going" ? "You're going!" : `You're on the waitlist (#${pos})`);
+    qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
+  }
+
+  async function handleCancel() {
+    if (!user) return;
+    const { error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: eventId });
+    if (error) { toast.error(error.message); return; }
+    toast.success("RSVP cancelled");
     qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
   }
 
