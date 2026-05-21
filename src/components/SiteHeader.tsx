@@ -32,6 +32,10 @@ export function SiteHeader() {
               <Link to="/dashboard" className="text-muted-foreground transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>
                 Host Dashboard
               </Link>
+              <Link to="/reports" className="text-muted-foreground transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>
+                Reports
+              </Link>
+
             </>
           )}
         </nav>
