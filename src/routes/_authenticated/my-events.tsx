@@ -13,9 +13,10 @@ import {
   Calendar, Users, Hourglass, CheckCircle2, Pencil, Settings, ScanLine, Download, Shield,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  fetchHostedEvents, isPast, exportAttendeesCsv, type HostedEvent,
-} from "@/lib/hosted-events";
+import { useServerFn } from "@tanstack/react-start";
+import { fetchHostedEvents, isPast, type HostedEvent } from "@/lib/hosted-events";
+import { exportEventCsv } from "@/lib/event-export.functions";
+
 
 export const Route = createFileRoute("/_authenticated/my-events")({
   head: () => ({ meta: [{ title: "My Events — Gather" }] }),
@@ -105,6 +106,25 @@ function MyEvents() {
 function EventCard({ ev }: { ev: HostedEvent }) {
   const past = isPast(ev);
   const isHost = ev.role === "host";
+  const exportFn = useServerFn(exportEventCsv);
+
+  async function doExport(kind: "rsvps" | "attendance") {
+    try {
+      const { filename, csv } = await exportFn({ data: { eventId: ev.id, kind } });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Export failed");
+    }
+  }
+
 
   return (
     <Card className="p-4">
@@ -151,17 +171,23 @@ function EventCard({ ev }: { ev: HostedEvent }) {
           </Link>
         </Button>
         {isHost && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={async () => {
-              try { await exportAttendeesCsv(ev.id, ev.title); }
-              catch (err: any) { toast.error(err.message ?? "Export failed"); }
-            }}
-          >
-            <Download className="mr-1.5 h-3.5 w-3.5" />Export
+          <Button size="sm" variant="outline" onClick={() => doExport("rsvps")}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />Export RSVPs
           </Button>
         )}
+        {isHost && (
+          <Button size="sm" variant="outline" onClick={() => doExport("attendance")}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />Export attendance
+          </Button>
+        )}
+        {isHost && (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/events/$eventId" params={{ eventId: ev.id }} hash="gallery">
+              <Shield className="mr-1.5 h-3.5 w-3.5" />Moderation
+            </Link>
+          </Button>
+        )}
+
         {isHost && (
           <Button asChild size="sm" variant="outline">
             <Link to="/events/$eventId" params={{ eventId: ev.id }} hash="gallery">
