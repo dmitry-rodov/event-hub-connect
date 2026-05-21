@@ -398,6 +398,7 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          queue_position: number | null
           status: Database["public"]["Enums"]["rsvp_status"]
           updated_at: string
           user_id: string
@@ -406,6 +407,7 @@ export type Database = {
           created_at?: string
           event_id: string
           id?: string
+          queue_position?: number | null
           status?: Database["public"]["Enums"]["rsvp_status"]
           updated_at?: string
           user_id: string
@@ -414,6 +416,7 @@ export type Database = {
           created_at?: string
           event_id?: string
           id?: string
+          queue_position?: number | null
           status?: Database["public"]["Enums"]["rsvp_status"]
           updated_at?: string
           user_id?: string
@@ -483,7 +486,12 @@ export type Database = {
       event_visibility: "public" | "unlisted" | "private"
       gallery_status: "pending" | "approved" | "rejected"
       host_role: "host" | "checker"
-      rsvp_status: "going" | "interested" | "not_going"
+      rsvp_status:
+        | "going"
+        | "interested"
+        | "not_going"
+        | "waitlist"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -615,7 +623,13 @@ export const Constants = {
       event_visibility: ["public", "unlisted", "private"],
       gallery_status: ["pending", "approved", "rejected"],
       host_role: ["host", "checker"],
-      rsvp_status: ["going", "interested", "not_going"],
+      rsvp_status: [
+        "going",
+        "interested",
+        "not_going",
+        "waitlist",
+        "cancelled",
+      ],
     },
   },
 } as const
