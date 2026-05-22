@@ -48,7 +48,11 @@ function HostPage() {
   const { data: host, isLoading } = useQuery({
     queryKey: ["host", hostSlug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("hosts").select("*").eq("slug", hostSlug).maybeSingle();
+      const { data, error } = await supabase
+        .from("hosts")
+        .select("id, slug, name, description, avatar_url, banner_url, website, created_by, created_at, updated_at")
+        .eq("slug", hostSlug)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
