@@ -9,9 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, Trash2, Plus } from "lucide-react";
+import { Copy, Trash2, UserPlus, ScanLine } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/hosts/$hostSlug/edit")({
   head: () => ({ meta: [{ title: "Edit Host — Gather" }] }),
@@ -23,8 +22,7 @@ function EditHost() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [role, setRole] = useState<"host" | "checker">("checker");
-  const [creating, setCreating] = useState(false);
+  const [creatingRole, setCreatingRole] = useState<"host" | "checker" | null>(null);
 
   const { data: host, isLoading } = useQuery({
     queryKey: ["host", hostSlug],
@@ -68,16 +66,19 @@ function EditHost() {
     },
   });
 
-  async function createInvite() {
+  async function createInvite(inviteRole: "host" | "checker") {
     if (!user || !host) return;
-    setCreating(true);
-    const { error } = await supabase
+    setCreatingRole(inviteRole);
+    const { data, error } = await supabase
       .from("host_invites")
-      .insert({ host_id: host.id, role: role as any, created_by: user.id });
-    setCreating(false);
+      .insert({ host_id: host.id, role: inviteRole, created_by: user.id })
+      .select("token")
+      .single();
+    setCreatingRole(null);
     if (error) { toast.error(error.message); return; }
-    toast.success("Invite link created");
+    toast.success(`${inviteRole === "host" ? "Host" : "Checker"} invite link created`);
     qc.invalidateQueries({ queryKey: ["host-invites", host.id] });
+    if (data?.token) copyInvite(data.token);
   }
 
   async function revokeInvite(id: string) {
@@ -136,17 +137,17 @@ function EditHost() {
 
         <div className="mt-6 rounded-lg border bg-muted/30 p-4">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">Invite a new member</Label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Select value={role} onValueChange={(v) => setRole(v as "host" | "checker")}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="host">Host (full access)</SelectItem>
-                <SelectItem value="checker">Checker (check-in only)</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={createInvite} disabled={creating}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create invite link
+          <p className="mt-2 text-xs text-muted-foreground">
+            Each button creates a unique link and copies it to your clipboard. When the recipient opens it while signed in, they automatically join with the matching role.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button onClick={() => createInvite("host")} disabled={creatingRole !== null}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              {creatingRole === "host" ? "Creating…" : "Invite as Host"}
+            </Button>
+            <Button variant="outline" onClick={() => createInvite("checker")} disabled={creatingRole !== null}>
+              <ScanLine className="mr-2 h-4 w-4" />
+              {creatingRole === "checker" ? "Creating…" : "Invite as Checker"}
             </Button>
           </div>
         </div>
