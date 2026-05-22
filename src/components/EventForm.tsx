@@ -173,13 +173,20 @@ export function EventForm({ initial, submitting, submitLabel = "Save", onSubmit 
         </p>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border p-4">
-        <div>
-          <Label>Paid event</Label>
-          <p className="text-xs text-muted-foreground">Charge attendees a ticket fee.</p>
-        </div>
-        <Switch checked={values.is_paid} onCheckedChange={(v) => set("is_paid", v)} />
-      </div>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <Label>Paid event</Label>
+                <p className="text-xs text-muted-foreground">Charge attendees a ticket fee.</p>
+              </div>
+              <Switch checked={false} disabled aria-label="Paid event (coming soon)" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>Coming soon</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : submitLabel}</Button>
     </form>
