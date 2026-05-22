@@ -43,9 +43,14 @@ function Explore() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
-      <section className="mb-10 max-w-2xl">
-        <h1 className="font-display text-5xl leading-tight md:text-6xl">Find your next gathering.</h1>
-        <p className="mt-4 text-lg text-muted-foreground">Discover events from hosts around you — RSVP in a tap.</p>
+      <section className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="font-display text-5xl leading-tight md:text-6xl">Find your next gathering.</h1>
+          <p className="mt-4 text-lg text-muted-foreground">Discover events from hosts around you — RSVP in a tap.</p>
+        </div>
+        <Button asChild size="lg" variant="outline">
+          <Link to="/hosts/new">Become a host</Link>
+        </Button>
       </section>
 
       <Card className="mb-8 p-5">

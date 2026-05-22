@@ -65,11 +65,14 @@ export type Database = {
           id: string
           is_paid: boolean
           location: string | null
+          online_url: string | null
           slug: string
           start_at: string
           status: Database["public"]["Enums"]["event_status"]
+          timezone: string
           title: string
           updated_at: string
+          venue_type: Database["public"]["Enums"]["venue_type"]
           visibility: Database["public"]["Enums"]["event_visibility"]
         }
         Insert: {
@@ -83,11 +86,14 @@ export type Database = {
           id?: string
           is_paid?: boolean
           location?: string | null
+          online_url?: string | null
           slug: string
           start_at: string
           status?: Database["public"]["Enums"]["event_status"]
+          timezone?: string
           title: string
           updated_at?: string
+          venue_type?: Database["public"]["Enums"]["venue_type"]
           visibility?: Database["public"]["Enums"]["event_visibility"]
         }
         Update: {
@@ -101,11 +107,14 @@ export type Database = {
           id?: string
           is_paid?: boolean
           location?: string | null
+          online_url?: string | null
           slug?: string
           start_at?: string
           status?: Database["public"]["Enums"]["event_status"]
+          timezone?: string
           title?: string
           updated_at?: string
+          venue_type?: Database["public"]["Enums"]["venue_type"]
           visibility?: Database["public"]["Enums"]["event_visibility"]
         }
         Relationships: [
@@ -501,6 +510,7 @@ export type Database = {
         | "not_going"
         | "waitlist"
         | "cancelled"
+      venue_type: "physical" | "online"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -639,6 +649,7 @@ export const Constants = {
         "waitlist",
         "cancelled",
       ],
+      venue_type: ["physical", "online"],
     },
   },
 } as const

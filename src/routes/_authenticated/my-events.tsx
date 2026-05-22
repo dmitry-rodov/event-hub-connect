@@ -187,14 +187,6 @@ function EventCard({ ev }: { ev: HostedEvent }) {
             </Link>
           </Button>
         )}
-
-        {isHost && (
-          <Button asChild size="sm" variant="outline">
-            <Link to="/events/$eventId" params={{ eventId: ev.id }} hash="gallery">
-              <Shield className="mr-1.5 h-3.5 w-3.5" />Moderation
-            </Link>
-          </Button>
-        )}
       </div>
     </Card>
   );
