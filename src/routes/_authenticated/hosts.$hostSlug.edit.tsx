@@ -205,7 +205,6 @@ function ProfileCard({ host, onSaved }: { host: any; onSaved: () => void }) {
         name,
         description: description || null,
         contact_email: contactEmail || null,
-        website: website || null,
       })
       .eq("id", host.id);
     setBusy(false);
