@@ -566,9 +566,6 @@ function RsvpStatusChip({
   } else if (status === "waitlist") {
     label = `Waitlisted${queuePosition ? ` · #${queuePosition}` : ""}`;
     cls = "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30";
-  } else if (status === "cancelled") {
-    label = "Cancelled";
-    cls = "bg-muted text-muted-foreground border-border";
   } else {
     return null;
   }
