@@ -119,6 +119,19 @@ function EventDetail() {
     },
   });
 
+  // How many "going" seats are taken (used to show "full" UI to non-RSVPd users)
+  const { data: goingCount } = useQuery({
+    queryKey: ["event-going-count", eventId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("rsvps")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("status", "going");
+      return count ?? 0;
+    },
+  });
+
   async function handleRsvp() {
     if (!user) {
       navigate({ to: "/signin", search: { redirect: `/events/${eventId}` } });
@@ -130,6 +143,9 @@ function EventDetail() {
     const pos = (data as any)?.queue_position;
     toast.success(status === "going" ? "You're going!" : `You're on the waitlist (#${pos})`);
     qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
+    qc.invalidateQueries({ queryKey: ["ticket", eventId] });
+    qc.invalidateQueries({ queryKey: ["my-tickets"] });
+    qc.invalidateQueries({ queryKey: ["event-going-count", eventId] });
   }
 
   async function handleCancel() {
@@ -138,7 +154,11 @@ function EventDetail() {
     if (error) { toast.error(error.message); return; }
     toast.success("RSVP cancelled");
     qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
+    qc.invalidateQueries({ queryKey: ["ticket", eventId] });
+    qc.invalidateQueries({ queryKey: ["my-tickets"] });
+    qc.invalidateQueries({ queryKey: ["event-going-count", eventId] });
   }
+
 
   if (isLoading) return <div className="mx-auto max-w-4xl px-6 py-12"><div className="h-96 animate-pulse rounded-xl bg-muted" /></div>;
   if (!event) return <div className="mx-auto max-w-4xl px-6 py-12">Event not found.</div>;
@@ -207,8 +227,15 @@ function EventDetail() {
                 <p className="mt-3 text-sm">On the waitlist — position <span className="font-medium">#{rsvp.queue_position ?? "?"}</span></p>
                 <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Leave waitlist</Button>
               </>
+            ) : (goingCount ?? 0) >= (event.capacity ?? 0) ? (
+              <>
+                <p className="mt-3 text-sm">This event is full ({goingCount}/{event.capacity}).</p>
+                <Button onClick={handleRsvp} className="mt-3 w-full" size="lg" variant="outline">Join waitlist</Button>
+                {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to join the waitlist.</p>}
+              </>
             ) : (
               <>
+                <p className="mt-3 text-sm text-muted-foreground">{(event.capacity ?? 0) - (goingCount ?? 0)} of {event.capacity} spots left</p>
                 <Button onClick={handleRsvp} className="mt-3 w-full" size="lg">I'm going</Button>
                 {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to RSVP and get your ticket.</p>}
               </>
