@@ -4,11 +4,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2, EyeOff, Ticket, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2, EyeOff, Eye, Ticket, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { approveGalleryPhoto, rejectGalleryPhoto } from "@/lib/gallery.functions";
 import { ReportButton } from "@/components/ReportButton";
+import { ShareButton } from "@/components/ShareButton";
 import { FeedbackSection } from "@/components/FeedbackSection";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
