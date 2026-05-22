@@ -443,6 +443,46 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
   );
 }
 
+function RsvpStatusPanel({
+  status,
+  queuePosition,
+  ticketId,
+  promoted,
+}: {
+  status: string | undefined;
+  queuePosition: number | null;
+  ticketId: string | null;
+  promoted: boolean;
+}) {
+  if (status === "going") {
+    return (
+      <Alert className="mt-5 border-primary/30 bg-primary/10">
+        <Ticket className="h-4 w-4" />
+        <AlertTitle>{promoted ? "You're in — promoted from waitlist" : "You're going"}</AlertTitle>
+        <AlertDescription>
+          <Link to="/tickets" hash={ticketId ? `ticket-${ticketId}` : undefined} className="font-medium text-primary underline-offset-4 hover:underline">
+            View your ticket
+          </Link>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (status === "waitlist") {
+    return (
+      <Alert className="mt-5 border-primary/30 bg-primary/10">
+        <Clock className="h-4 w-4" />
+        <AlertTitle>You're on the waitlist</AlertTitle>
+        <AlertDescription>
+          Your position is <span className="font-medium">#{queuePosition ?? "?"}</span>.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return null;
+}
+
 function PendingTile({
   photoId,
   onApprove,
