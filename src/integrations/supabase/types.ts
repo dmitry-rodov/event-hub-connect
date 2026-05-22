@@ -295,6 +295,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           banner_url: string | null
+          contact_email: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -307,6 +308,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           banner_url?: string | null
+          contact_email?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -319,6 +321,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           banner_url?: string | null
+          contact_email?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
