@@ -4,11 +4,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2, EyeOff, Ticket, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2, EyeOff, Eye, Ticket, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { approveGalleryPhoto, rejectGalleryPhoto } from "@/lib/gallery.functions";
 import { ReportButton } from "@/components/ReportButton";
+import { ShareButton } from "@/components/ShareButton";
 import { FeedbackSection } from "@/components/FeedbackSection";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -247,6 +248,7 @@ function EventDetail() {
             {event.location && <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" />{event.location}</span>}
             {capacity > 0 && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />{occupiedSeats}/{capacity} seats occupied</span>}
             <span className="inline-flex items-center gap-2"><Clock className="h-4 w-4" />{waitlistCount} waitlisted</span>
+            <ShareButton title={event.title} text={event.description ?? undefined} path={`/events/${eventId}`} />
             {user && !isHost && <ReportButton target={{ kind: "event", eventId }} />}
           </div>
 
@@ -321,13 +323,13 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
     },
   });
 
-  async function hidePhoto(photoId: string) {
+  async function setHidden(photoId: string, hidden: boolean) {
     const { error } = await supabase
       .from("gallery_photos")
-      .update({ hidden: true })
+      .update({ hidden })
       .eq("id", photoId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Hidden");
+    toast.success(hidden ? "Hidden" : "Shown");
     qc.invalidateQueries({ queryKey: ["gallery", eventId] });
   }
 
@@ -396,8 +398,13 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
               <img src={p.url} alt={p.caption ?? ""} className={`aspect-square w-full object-cover ${p.hidden ? "opacity-40" : ""}`} />
               <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 {isHost && !p.hidden && (
-                  <Button size="icon" variant="secondary" onClick={() => hidePhoto(p.id)} title="Hide">
+                  <Button size="icon" variant="secondary" onClick={() => setHidden(p.id, true)} title="Hide">
                     <EyeOff className="h-4 w-4" />
+                  </Button>
+                )}
+                {isHost && p.hidden && (
+                  <Button size="icon" variant="secondary" onClick={() => setHidden(p.id, false)} title="Show">
+                    <Eye className="h-4 w-4" />
                   </Button>
                 )}
                 {user && p.uploaded_by !== user.id && (
@@ -565,9 +572,6 @@ function RsvpStatusChip({
   } else if (status === "waitlist") {
     label = `Waitlisted${queuePosition ? ` · #${queuePosition}` : ""}`;
     cls = "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30";
-  } else if (status === "cancelled") {
-    label = "Cancelled";
-    cls = "bg-muted text-muted-foreground border-border";
   } else {
     return null;
   }

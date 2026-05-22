@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Globe, Mail, Pencil } from "lucide-react";
+import { ShareButton } from "@/components/ShareButton";
 
 export const Route = createFileRoute("/h/$hostSlug")({
   component: HostPage,
@@ -114,20 +115,23 @@ function HostPage() {
             </div>
           </div>
         </div>
-        {isHost && (
-          <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/hosts/$hostSlug/edit" params={{ hostSlug }}>
-                <Pencil className="mr-2 h-3 w-3" /> Edit host
-              </Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link to="/hosts/$hostSlug/events/new" params={{ hostSlug }}>
-                + New event
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <ShareButton title={host.name} text={host.description ?? undefined} path={`/h/${hostSlug}`} />
+          {isHost && (
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/hosts/$hostSlug/edit" params={{ hostSlug }}>
+                  <Pencil className="mr-2 h-3 w-3" /> Edit host
+                </Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link to="/hosts/$hostSlug/events/new" params={{ hostSlug }}>
+                  + New event
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <h2 className="mt-12 mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">Events</h2>

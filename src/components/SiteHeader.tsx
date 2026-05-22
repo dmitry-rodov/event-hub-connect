@@ -21,6 +21,9 @@ export function SiteHeader() {
           <Link to="/" activeOptions={{ exact: true }} className="text-muted-foreground transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>
             Explore
           </Link>
+          <Link to="/hosts" className="text-muted-foreground transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>
+            Hosts
+          </Link>
           {user && (
             <>
               <Link to="/tickets" className="text-muted-foreground transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>
