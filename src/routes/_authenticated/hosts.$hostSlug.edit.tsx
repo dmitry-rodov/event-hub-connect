@@ -124,7 +124,7 @@ function EditHost() {
         <ul className="space-y-2">
           {(members ?? []).map((m) => (
             <li key={m.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
-              <span>{m.profile?.display_name ?? m.user_id.slice(0, 8)}</span>
+              <span>{m.display_name ?? m.user_id.slice(0, 8)}</span>
               <span className="rounded-full bg-accent px-2 py-0.5 text-xs capitalize text-accent-foreground">{m.role}</span>
             </li>
           ))}
