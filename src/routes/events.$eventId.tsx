@@ -398,8 +398,13 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
               <img src={p.url} alt={p.caption ?? ""} className={`aspect-square w-full object-cover ${p.hidden ? "opacity-40" : ""}`} />
               <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 {isHost && !p.hidden && (
-                  <Button size="icon" variant="secondary" onClick={() => hidePhoto(p.id)} title="Hide">
+                  <Button size="icon" variant="secondary" onClick={() => setHidden(p.id, true)} title="Hide">
                     <EyeOff className="h-4 w-4" />
+                  </Button>
+                )}
+                {isHost && p.hidden && (
+                  <Button size="icon" variant="secondary" onClick={() => setHidden(p.id, false)} title="Show">
+                    <Eye className="h-4 w-4" />
                   </Button>
                 )}
                 {user && p.uploaded_by !== user.id && (
