@@ -95,6 +95,9 @@ function EditEvent() {
           <Button size="sm" variant="outline" disabled={busy} onClick={() => setStatus("draft")}><EyeOff className="mr-2 h-4 w-4" />Unpublish</Button>
         )}
         <Button size="sm" variant="outline" disabled={busy} onClick={duplicate}><Copy className="mr-2 h-4 w-4" />Duplicate</Button>
+        {event.status === "published" && (
+          <ShareButton title={event.title} path={`/events/${event.id}`} />
+        )}
       </Card>
 
       <Card className="mt-6 p-6">
