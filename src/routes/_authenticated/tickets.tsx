@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Ticket as TicketIcon } from "lucide-react";
+import { Calendar, MapPin, Ticket as TicketIcon, X } from "lucide-react";
 import { buildIcs, downloadIcs } from "@/lib/ics";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/tickets")({
   head: () => ({ meta: [{ title: "My Tickets — Gather" }] }),
@@ -78,6 +79,8 @@ function MyTickets() {
 
 function TicketCard({ ticket }: { ticket: TicketRow }) {
   const ev = ticket.event;
+  const qc = useQueryClient();
+  const [cancelling, setCancelling] = useState(false);
   if (!ev) return null;
 
   const startsAt = new Date(ev.start_at);
@@ -95,6 +98,19 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
     });
     const safeTitle = ev!.title.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase() || "event";
     downloadIcs(safeTitle, ics);
+  }
+
+  async function handleCancel() {
+    if (!confirm("Cancel this ticket? Your spot will be freed up for someone on the waitlist.")) return;
+    setCancelling(true);
+    const { error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: ev!.id });
+    setCancelling(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Ticket cancelled");
+    qc.invalidateQueries({ queryKey: ["my-tickets"] });
+    qc.invalidateQueries({ queryKey: ["rsvp", ev!.id] });
+    qc.invalidateQueries({ queryKey: ["ticket", ev!.id] });
+    qc.invalidateQueries({ queryKey: ["event-going-count", ev!.id] });
   }
 
   async function copyCode() {
@@ -163,6 +179,10 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
                     <TicketIcon className="mr-2 h-3.5 w-3.5" />
                     View event
                   </Link>
+                </Button>
+                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={handleCancel} disabled={cancelling}>
+                  <X className="mr-2 h-3.5 w-3.5" />
+                  {cancelling ? "Cancelling…" : "Cancel ticket"}
                 </Button>
               </div>
             </div>
