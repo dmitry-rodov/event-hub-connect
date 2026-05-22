@@ -181,3 +181,55 @@ function EditHost() {
     </div>
   );
 }
+
+function ProfileCard({ host, onSaved }: { host: any; onSaved: () => void }) {
+  const [name, setName] = useState<string>(host.name ?? "");
+  const [description, setDescription] = useState<string>(host.description ?? "");
+  const [contactEmail, setContactEmail] = useState<string>(host.contact_email ?? "");
+  const [website, setWebsite] = useState<string>(host.website ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase
+      .from("hosts")
+      .update({
+        name,
+        description: description || null,
+        contact_email: contactEmail || null,
+        website: website || null,
+      })
+      .eq("id", host.id);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Profile updated");
+    onSaved();
+  }
+
+  return (
+    <Card className="mt-6 p-6">
+      <h2 className="font-display text-xl">Profile</h2>
+      <p className="mb-4 text-sm text-muted-foreground">Public details shown on your host page.</p>
+      <form onSubmit={save} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="h-name">Name</Label>
+          <Input id="h-name" required value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="h-bio">Short bio</Label>
+          <Textarea id="h-bio" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="h-email">Contact email</Label>
+          <Input id="h-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="hello@yourhost.com" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="h-web">Website</Label>
+          <Input id="h-web" type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+        </div>
+        <Button type="submit" disabled={busy || !name}>{busy ? "Saving…" : "Save profile"}</Button>
+      </form>
+    </Card>
+  );
+}
