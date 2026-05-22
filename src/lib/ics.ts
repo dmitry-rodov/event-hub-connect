@@ -69,13 +69,25 @@ export function buildIcs(ev: IcsEventInput): string {
 }
 
 export function downloadIcs(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename.endsWith(".ics") ? filename : `${filename}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  const safeName = filename.endsWith(".ics") ? filename : `${filename}.ics`;
+  const dataUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(content)}`;
+
+  // Try a download via an anchor first (works in top-level pages).
+  try {
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = safeName;
+    a.rel = "noopener";
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch {
+    // Fallback: open the calendar file in a new tab. The browser will then
+    // offer to download or open it with the user's calendar app. This path
+    // is required inside sandboxed preview iframes where forced downloads
+    // are blocked.
+    window.open(dataUrl, "_blank", "noopener");
+  }
 }
+
