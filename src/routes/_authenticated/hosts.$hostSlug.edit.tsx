@@ -118,6 +118,8 @@ function EditHost() {
         />
       </Card>
 
+      <ProfileCard host={host} onSaved={() => qc.invalidateQueries({ queryKey: ["host", hostSlug] })} />
+
       <Card className="mt-6 p-6">
         <h2 className="font-display text-xl">Team</h2>
         <p className="mb-4 text-sm text-muted-foreground">Hosts can edit events. Checkers can run the check-in page only.</p>
