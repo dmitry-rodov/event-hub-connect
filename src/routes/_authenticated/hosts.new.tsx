@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +24,13 @@ function NewHost() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
+  const [bio, setBio] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Stable folder for logo upload before the host row exists.
+  const [draftFolder] = useState(() => `drafts/${crypto.randomUUID()}`);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,7 +39,14 @@ function NewHost() {
     const finalSlug = slug || slugify(name);
     const { data, error } = await supabase
       .from("hosts")
-      .insert({ name, slug: finalSlug, description: description || null, created_by: user.id })
+      .insert({
+        name,
+        slug: finalSlug,
+        description: bio || null,
+        contact_email: contactEmail || null,
+        avatar_url: avatarUrl,
+        created_by: user.id,
+      })
       .select("slug")
       .single();
     setBusy(false);
@@ -48,21 +61,41 @@ function NewHost() {
       <p className="mt-2 text-muted-foreground">Hosts are the organizations or people running events.</p>
 
       <Card className="mt-8 p-6">
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-6">
+          <div className="space-y-2">
+            <Label>Logo</Label>
+            <ImageUpload
+              bucket="host-logos"
+              folder={draftFolder}
+              currentUrl={avatarUrl}
+              label="Upload logo"
+              onUploaded={({ publicUrl }) => setAvatarUrl(publicUrl)}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" required value={name} onChange={(e) => { setName(e.target.value); if (!slug) setSlug(slugify(e.target.value)); }} />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="slug">Slug</Label>
             <Input id="slug" required value={slug} onChange={(e) => setSlug(slugify(e.target.value))} placeholder="my-host" />
             <p className="text-xs text-muted-foreground">Your public page will be /h/{slug || "your-slug"}</p>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="desc">Description</Label>
-            <Textarea id="desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Label htmlFor="bio">Short bio</Label>
+            <Textarea id="bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell people who you are and what you organize." />
           </div>
-          <Button type="submit" disabled={busy || !name || !slug}>{busy ? "Creating…" : "Create host"}</Button>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Contact email</Label>
+            <Input id="email" type="email" required value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="hello@yourhost.com" />
+            <p className="text-xs text-muted-foreground">Shown on your public host page so attendees can reach you.</p>
+          </div>
+
+          <Button type="submit" disabled={busy || !name || !slug || !contactEmail}>{busy ? "Creating…" : "Create host"}</Button>
         </form>
       </Card>
     </div>
