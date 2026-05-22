@@ -39,24 +39,25 @@ export async function fetchHostedEvents(userId: string): Promise<HostedEvent[]> 
   if (eErr) throw eErr;
   if (!events?.length) return [];
 
-  const eventIds = events.map((e) => e.id);
-  const [rsvpsRes, checkinsRes] = await Promise.all([
-    supabase.from("rsvps").select("event_id, status").in("event_id", eventIds),
-    supabase.from("checkins").select("event_id").in("event_id", eventIds),
-  ]);
-  if (rsvpsRes.error) throw rsvpsRes.error;
-  if (checkinsRes.error) throw checkinsRes.error;
-
   const counts = new Map<string, { going: number; waitlist: number; checkedIn: number }>();
-  for (const id of eventIds) counts.set(id, { going: 0, waitlist: 0, checkedIn: 0 });
-  for (const r of rsvpsRes.data ?? []) {
-    const c = counts.get(r.event_id)!;
-    if (r.status === "going") c.going++;
-    else if (r.status === "waitlist") c.waitlist++;
-  }
-  for (const c of checkinsRes.data ?? []) {
-    counts.get(c.event_id)!.checkedIn++;
-  }
+  const countRows = await Promise.all(events.map(async (e) => {
+    const [attendanceRes, checkedInRes] = await Promise.all([
+      supabase.rpc("event_attendance_counts" as any, { _event_id: e.id }),
+      supabase.from("checkins").select("id", { count: "exact", head: true }).eq("event_id", e.id),
+    ]);
+    if (attendanceRes.error) throw attendanceRes.error;
+    if (checkedInRes.error) throw checkedInRes.error;
+    const attendance = attendanceRes.data as { going?: number; waitlist?: number } | null;
+    return {
+      eventId: e.id,
+      counts: {
+        going: attendance?.going ?? 0,
+        waitlist: attendance?.waitlist ?? 0,
+        checkedIn: checkedInRes.count ?? 0,
+      },
+    };
+  }));
+  for (const row of countRows) counts.set(row.eventId, row.counts);
 
   return events.map((e) => ({
     id: e.id,
