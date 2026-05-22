@@ -205,6 +205,11 @@ function EventDetail() {
 
   const endsAt = event.end_at ? new Date(event.end_at).getTime() : new Date(event.start_at).getTime();
   const ended = endsAt < Date.now();
+  const capacity = attendance?.capacity ?? event.capacity ?? 0;
+  const occupiedSeats = attendance?.going ?? 0;
+  const waitlistCount = attendance?.waitlist ?? 0;
+  const seatsLeft = capacity > 0 ? Math.max(0, capacity - occupiedSeats) : null;
+  const isFull = capacity > 0 && occupiedSeats >= capacity;
 
   return (
     <article className="mx-auto max-w-4xl px-6 py-10">
@@ -233,11 +238,13 @@ function EventDetail() {
           )}
           <h1 className="mt-2 font-display text-4xl md:text-5xl">{event.title}</h1>
           <RsvpStatusChip status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} promoted={promoted} />
+          <RsvpStatusPanel status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} ticketId={ticket?.id ?? null} promoted={promoted} />
 
           <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(event.start_at).toLocaleString()}</span>
             {event.location && <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" />{event.location}</span>}
-            {event.capacity && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />Cap. {event.capacity}</span>}
+            {capacity > 0 && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />{occupiedSeats}/{capacity} seats occupied</span>}
+            <span className="inline-flex items-center gap-2"><Clock className="h-4 w-4" />{waitlistCount} waitlisted</span>
             {user && !isHost && <ReportButton target={{ kind: "event", eventId }} />}
           </div>
 
@@ -267,15 +274,15 @@ function EventDetail() {
                 <p className="mt-3 text-sm">On the waitlist — position <span className="font-medium">#{rsvp.queue_position ?? "?"}</span></p>
                 <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Leave waitlist</Button>
               </>
-            ) : (goingCount ?? 0) >= (event.capacity ?? 0) ? (
+            ) : isFull ? (
               <>
-                <p className="mt-3 text-sm">This event is full ({goingCount}/{event.capacity}).</p>
+                <p className="mt-3 text-sm">This event is full ({occupiedSeats}/{capacity}).</p>
                 <Button onClick={handleRsvp} className="mt-3 w-full" size="lg" variant="outline">Join waitlist</Button>
                 {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to join the waitlist.</p>}
               </>
             ) : (
               <>
-                <p className="mt-3 text-sm text-muted-foreground">{(event.capacity ?? 0) - (goingCount ?? 0)} of {event.capacity} spots left</p>
+                <p className="mt-3 text-sm text-muted-foreground">{seatsLeft ?? "—"} of {capacity || "—"} spots left</p>
                 <Button onClick={handleRsvp} className="mt-3 w-full" size="lg">I'm going</Button>
                 {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to RSVP and get your ticket.</p>}
               </>
