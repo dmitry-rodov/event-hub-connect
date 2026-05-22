@@ -163,12 +163,13 @@ function EventDetail() {
     if (error) { toast.error(error.message); return; }
     const status = (data as any)?.status as "going" | "waitlist" | undefined;
     const pos = (data as any)?.queue_position ?? null;
+    const existing = Boolean((data as any)?.existing);
     // Optimistically reflect the new status so the UI flips instantly.
     qc.setQueryData(["rsvp", eventId, user.id], { status, queue_position: pos });
     qc.setQueryData<{ going: number; waitlist: number; capacity: number | null } | undefined>(["event-attendance-counts", eventId], (counts) => counts ? {
       ...counts,
-      going: status === "going" ? counts.going + 1 : counts.going,
-      waitlist: status === "waitlist" ? counts.waitlist + 1 : counts.waitlist,
+      going: !existing && status === "going" ? counts.going + 1 : counts.going,
+      waitlist: !existing && status === "waitlist" ? counts.waitlist + 1 : counts.waitlist,
     } : counts);
     await Promise.all([
       qc.refetchQueries({ queryKey: ["rsvp", eventId] }),
@@ -182,14 +183,15 @@ function EventDetail() {
     if (!user) return;
     const wasGoing = rsvp?.status === "going";
     const wasWaitlisted = rsvp?.status === "waitlist";
-    const { error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: eventId });
+    const { data, error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: eventId });
     if (error) { toast.error(error.message); return; }
+    const promotedUser = (data as any)?.promoted_user as string | null | undefined;
     qc.setQueryData(["rsvp", eventId, user.id], null);
     qc.setQueryData(["ticket", eventId, user.id], null);
     qc.setQueryData<{ going: number; waitlist: number; capacity: number | null } | undefined>(["event-attendance-counts", eventId], (counts) => counts ? {
       ...counts,
-      going: wasGoing ? Math.max(0, counts.going - 1) : counts.going,
-      waitlist: wasWaitlisted ? Math.max(0, counts.waitlist - 1) : counts.waitlist,
+      going: wasGoing && !promotedUser ? Math.max(0, counts.going - 1) : counts.going,
+      waitlist: wasWaitlisted || promotedUser ? Math.max(0, counts.waitlist - 1) : counts.waitlist,
     } : counts);
     await Promise.all([
       qc.refetchQueries({ queryKey: ["rsvp", eventId] }),
