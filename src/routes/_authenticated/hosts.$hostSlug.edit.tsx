@@ -230,10 +230,7 @@ function ProfileCard({ host, onSaved }: { host: any; onSaved: () => void }) {
           <Label htmlFor="h-email">Contact email</Label>
           <Input id="h-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="hello@yourhost.com" />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="h-web">Website</Label>
-          <Input id="h-web" type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
-        </div>
+        
         <Button type="submit" disabled={busy || !name}>{busy ? "Saving…" : "Save profile"}</Button>
       </form>
     </Card>
