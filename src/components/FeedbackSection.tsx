@@ -86,7 +86,16 @@ export function FeedbackSection({ eventId, canSubmit }: { eventId: string; canSu
         <p className="mt-3 text-sm text-muted-foreground">No feedback yet.</p>
       )}
 
-      {canSubmit && !existing && (
+      {canSubmit && !existing && !showForm && (
+        <div className="mt-8">
+          <Button onClick={() => setShowForm(true)} className="gap-2">
+            <MessageSquarePlus className="h-4 w-4" />
+            Add feedback
+          </Button>
+        </div>
+      )}
+
+      {canSubmit && !existing && showForm && (
         <div className="mt-8 rounded-lg border bg-muted/30 p-4">
           <h3 className="font-medium">Leave your feedback</h3>
           <p className="mt-1 text-xs text-muted-foreground">One submission per attendee.</p>
@@ -105,7 +114,10 @@ export function FeedbackSection({ eventId, canSubmit }: { eventId: string; canSu
               <Label className="text-xs">Comment (optional)</Label>
               <Textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1000} rows={4} placeholder="What stood out?" />
             </div>
-            <Button onClick={submit} disabled={busy}>{busy ? "Submitting…" : "Submit feedback"}</Button>
+            <div className="flex gap-2">
+              <Button onClick={submit} disabled={busy}>{busy ? "Submitting…" : "Submit feedback"}</Button>
+              <Button variant="outline" onClick={() => setShowForm(false)} disabled={busy}>Cancel</Button>
+            </div>
           </div>
         </div>
       )}
