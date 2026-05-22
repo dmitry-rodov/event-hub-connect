@@ -37,13 +37,20 @@ function EditHost() {
     queryKey: ["host-members", host?.id],
     enabled: !!host?.id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: rows } = await supabase
         .from("host_members")
-        .select("id, user_id, role, profile:profiles(display_name)")
+        .select("id, user_id, role")
         .eq("host_id", host!.id);
-      return (data ?? []) as Array<{ id: string; user_id: string; role: string; profile: { display_name: string | null } | null }>;
+      const list = rows ?? [];
+      const ids = list.map((r) => r.user_id);
+      const { data: profs } = ids.length
+        ? await supabase.from("profiles").select("id, display_name").in("id", ids)
+        : { data: [] as Array<{ id: string; display_name: string | null }> };
+      const map = new Map((profs ?? []).map((p) => [p.id, p.display_name]));
+      return list.map((r) => ({ ...r, display_name: map.get(r.user_id) ?? null }));
     },
   });
+
 
   const { data: invites } = useQuery({
     queryKey: ["host-invites", host?.id],
