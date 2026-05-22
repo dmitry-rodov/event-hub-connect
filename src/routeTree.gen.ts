@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SigninRouteImport } from './routes/signin'
+import { Route as HostsRouteImport } from './routes/hosts'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -28,6 +29,11 @@ import { Route as AuthenticatedHostsHostSlugEventsNewRouteImport } from './route
 const SigninRoute = SigninRouteImport.update({
   id: '/signin',
   path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HostsRoute = HostsRouteImport.update({
+  id: '/hosts',
+  path: '/hosts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -106,6 +112,7 @@ const AuthenticatedHostsHostSlugEventsNewRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/hosts': typeof HostsRoute
   '/signin': typeof SigninRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-events': typeof AuthenticatedMyEventsRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/hosts': typeof HostsRoute
   '/signin': typeof SigninRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-events': typeof AuthenticatedMyEventsRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/hosts': typeof HostsRoute
   '/signin': typeof SigninRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/my-events': typeof AuthenticatedMyEventsRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/hosts'
     | '/signin'
     | '/dashboard'
     | '/my-events'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/hosts'
     | '/signin'
     | '/dashboard'
     | '/my-events'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/hosts'
     | '/signin'
     | '/_authenticated/dashboard'
     | '/_authenticated/my-events'
@@ -209,6 +221,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  HostsRoute: typeof HostsRoute
   SigninRoute: typeof SigninRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   HHostSlugRoute: typeof HHostSlugRoute
@@ -222,6 +235,13 @@ declare module '@tanstack/react-router' {
       path: '/signin'
       fullPath: '/signin'
       preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hosts': {
+      id: '/hosts'
+      path: '/hosts'
+      fullPath: '/hosts'
+      preLoaderRoute: typeof HostsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -358,6 +378,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  HostsRoute: HostsRoute,
   SigninRoute: SigninRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   HHostSlugRoute: HHostSlugRoute,
