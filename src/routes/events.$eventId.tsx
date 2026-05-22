@@ -142,10 +142,12 @@ function EventDetail() {
     const status = (data as any)?.status;
     const pos = (data as any)?.queue_position;
     toast.success(status === "going" ? "You're going!" : `You're on the waitlist (#${pos})`);
-    qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
-    qc.invalidateQueries({ queryKey: ["ticket", eventId] });
-    qc.invalidateQueries({ queryKey: ["my-tickets"] });
-    qc.invalidateQueries({ queryKey: ["event-going-count", eventId] });
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["rsvp", eventId] }),
+      qc.invalidateQueries({ queryKey: ["ticket", eventId] }),
+      qc.invalidateQueries({ queryKey: ["my-tickets"] }),
+      qc.invalidateQueries({ queryKey: ["event-going-count", eventId] }),
+    ]);
   }
 
   async function handleCancel() {
@@ -153,10 +155,12 @@ function EventDetail() {
     const { error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: eventId });
     if (error) { toast.error(error.message); return; }
     toast.success("RSVP cancelled");
-    qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
-    qc.invalidateQueries({ queryKey: ["ticket", eventId] });
-    qc.invalidateQueries({ queryKey: ["my-tickets"] });
-    qc.invalidateQueries({ queryKey: ["event-going-count", eventId] });
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["rsvp", eventId] }),
+      qc.invalidateQueries({ queryKey: ["ticket", eventId] }),
+      qc.invalidateQueries({ queryKey: ["my-tickets"] }),
+      qc.invalidateQueries({ queryKey: ["event-going-count", eventId] }),
+    ]);
   }
 
 
