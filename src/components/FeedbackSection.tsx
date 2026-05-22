@@ -24,6 +24,7 @@ export function FeedbackSection({ eventId, canSubmit }: { eventId: string; canSu
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   const { data: list } = useQuery({
     queryKey: ["feedback-list", eventId],
