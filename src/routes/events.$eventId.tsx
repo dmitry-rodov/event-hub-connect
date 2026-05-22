@@ -120,18 +120,39 @@ function EventDetail() {
     },
   });
 
-  // How many "going" seats are taken (used to show "full" UI to non-RSVPd users)
-  const { data: goingCount } = useQuery({
-    queryKey: ["event-going-count", eventId],
+  const { data: attendance } = useQuery({
+    queryKey: ["event-attendance-counts", eventId],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("rsvps")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", eventId)
-        .eq("status", "going");
-      return count ?? 0;
+      const { data, error } = await supabase.rpc("event_attendance_counts" as any, { _event_id: eventId });
+      if (error) throw error;
+      return data as { going: number; waitlist: number; capacity: number | null };
     },
   });
+
+  useEffect(() => {
+    const refresh = () => {
+      qc.invalidateQueries({ queryKey: ["event-attendance-counts", eventId] });
+      qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
+      qc.invalidateQueries({ queryKey: ["ticket", eventId] });
+      qc.invalidateQueries({ queryKey: ["my-tickets"] });
+    };
+    const channel = supabase
+      .channel(`event-attendance-${eventId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rsvps", filter: `event_id=eq.${eventId}` },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tickets", filter: `event_id=eq.${eventId}` },
+        refresh,
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [eventId, qc]);
 
   async function handleRsvp() {
     if (!user) {
