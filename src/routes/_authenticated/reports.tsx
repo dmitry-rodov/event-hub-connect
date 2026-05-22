@@ -79,8 +79,8 @@ function ReportsQueue() {
       const { error } = await supabase.from("gallery_photos").update({ hidden: true }).eq("id", photoId);
       if (error) { toast.error(error.message); return; }
     } else if (r.event_id) {
-      // Unpublishing the event removes it from public pages
-      const { error } = await supabase.from("events").update({ status: "draft" }).eq("id", r.event_id);
+      // Make the event unlisted so it's no longer publicly discoverable
+      const { error } = await supabase.from("events").update({ visibility: "unlisted" }).eq("id", r.event_id);
       if (error) { toast.error(error.message); return; }
     }
     await supabase.from("reports").update({ status: "resolved" }).eq("id", r.id);
