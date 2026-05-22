@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EyeOff, X, Flag } from "lucide-react";
+import { EyeOff, X, Flag, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -38,10 +38,28 @@ function ReportsQueue() {
     queryKey: ["host-reports", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      // Only show reports about content the user hosts — exclude reports the user submitted themselves.
+      const { data: memberRows } = await supabase
+        .from("host_members")
+        .select("host_id")
+        .eq("user_id", user!.id)
+        .eq("role", "host");
+      const hostIds = (memberRows ?? []).map((m) => m.host_id);
+      if (hostIds.length === 0) return [] as ReportRow[];
+
+      const { data: ownEvents } = await supabase
+        .from("events")
+        .select("id")
+        .in("host_id", hostIds);
+      const eventIds = (ownEvents ?? []).map((e) => e.id);
+      if (eventIds.length === 0) return [] as ReportRow[];
+
       const { data, error } = await supabase
         .from("reports")
         .select("id, reason, details, status, created_at, event_id, host_id, reporter_id, event:events(id, title, host_id)")
         .eq("status", "open")
+        .neq("reporter_id", user!.id)
+        .in("event_id", eventIds)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as ReportRow[];
@@ -110,6 +128,13 @@ function ReportsQueue() {
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
+                    {r.event && (
+                      <Button asChild size="sm" variant="default">
+                        <Link to="/events/$eventId" params={{ eventId: r.event.id }}>
+                          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />View event
+                        </Link>
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" onClick={() => hide(r)}>
                       <EyeOff className="mr-1.5 h-3.5 w-3.5" />Hide
                     </Button>
