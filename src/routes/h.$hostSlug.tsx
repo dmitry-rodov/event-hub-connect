@@ -73,6 +73,15 @@ function HostPage() {
     },
   });
 
+  const { data: contactEmail } = useQuery({
+    queryKey: ["host-contact-email", host?.id, user?.id],
+    enabled: !!user && !!host?.id && !!isHost,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_host_contact_email" as any, { _host_id: host!.id });
+      return (data as string | null) ?? null;
+    },
+  });
+
   const { data: events } = useQuery({
     queryKey: ["host-events", host?.id],
     enabled: !!host?.id,
