@@ -42,13 +42,23 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           {user ? (
-            <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate({ to: "/" }); }}>
-              <LogOut className="mr-2 h-4 w-4" /> Sign out
-            </Button>
+            <>
+              <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+                <Link to="/hosts/new">Become a host</Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate({ to: "/" }); }}>
+                <LogOut className="mr-2 h-4 w-4" /> Sign out
+              </Button>
+            </>
           ) : (
-            <Button asChild size="sm">
-              <Link to="/signin">Sign in</Link>
-            </Button>
+            <>
+              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+                <Link to="/signin" search={{ redirect: "/hosts/new" } as never}>Become a host</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link to="/signin">Sign in</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>
