@@ -110,7 +110,7 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
     qc.invalidateQueries({ queryKey: ["my-tickets"] });
     qc.invalidateQueries({ queryKey: ["rsvp", ev!.id] });
     qc.invalidateQueries({ queryKey: ["ticket", ev!.id] });
-    qc.invalidateQueries({ queryKey: ["event-going-count", ev!.id] });
+    qc.invalidateQueries({ queryKey: ["event-attendance-counts", ev!.id] });
   }
 
   async function copyCode() {

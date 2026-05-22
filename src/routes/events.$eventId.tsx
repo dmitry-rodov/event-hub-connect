@@ -4,12 +4,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2, EyeOff } from "lucide-react";
+import { Calendar, MapPin, Users, Pencil, Check, X, Upload, Loader2, EyeOff, Ticket, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { approveGalleryPhoto, rejectGalleryPhoto } from "@/lib/gallery.functions";
 import { ReportButton } from "@/components/ReportButton";
 import { FeedbackSection } from "@/components/FeedbackSection";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 export const Route = createFileRoute("/events/$eventId")({
@@ -82,7 +83,7 @@ function EventDetail() {
 
   const { data: ticket } = useQuery({
     queryKey: ["ticket", eventId, user?.id],
-    enabled: !!user && rsvp?.status === "going",
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase
         .from("tickets")
@@ -119,18 +120,39 @@ function EventDetail() {
     },
   });
 
-  // How many "going" seats are taken (used to show "full" UI to non-RSVPd users)
-  const { data: goingCount } = useQuery({
-    queryKey: ["event-going-count", eventId],
+  const { data: attendance } = useQuery({
+    queryKey: ["event-attendance-counts", eventId],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("rsvps")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", eventId)
-        .eq("status", "going");
-      return count ?? 0;
+      const { data, error } = await supabase.rpc("event_attendance_counts" as any, { _event_id: eventId });
+      if (error) throw error;
+      return data as { going: number; waitlist: number; capacity: number | null };
     },
   });
+
+  useEffect(() => {
+    const refresh = () => {
+      qc.invalidateQueries({ queryKey: ["event-attendance-counts", eventId] });
+      qc.invalidateQueries({ queryKey: ["rsvp", eventId] });
+      qc.invalidateQueries({ queryKey: ["ticket", eventId] });
+      qc.invalidateQueries({ queryKey: ["my-tickets"] });
+    };
+    const channel = supabase
+      .channel(`event-attendance-${eventId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rsvps", filter: `event_id=eq.${eventId}` },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tickets", filter: `event_id=eq.${eventId}` },
+        refresh,
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [eventId, qc]);
 
   async function handleRsvp() {
     if (!user) {
@@ -141,36 +163,41 @@ function EventDetail() {
     if (error) { toast.error(error.message); return; }
     const status = (data as any)?.status as "going" | "waitlist" | undefined;
     const pos = (data as any)?.queue_position ?? null;
-    toast.success(status === "going" ? "You're going!" : `You're on the waitlist (#${pos})`);
+    const existing = Boolean((data as any)?.existing);
     // Optimistically reflect the new status so the UI flips instantly.
     qc.setQueryData(["rsvp", eventId, user.id], { status, queue_position: pos });
-    if (status === "going") {
-      qc.setQueryData<number | undefined>(["event-going-count", eventId], (c) => (c ?? 0) + 1);
-    }
+    qc.setQueryData<{ going: number; waitlist: number; capacity: number | null } | undefined>(["event-attendance-counts", eventId], (counts) => counts ? {
+      ...counts,
+      going: !existing && status === "going" ? counts.going + 1 : counts.going,
+      waitlist: !existing && status === "waitlist" ? counts.waitlist + 1 : counts.waitlist,
+    } : counts);
     await Promise.all([
       qc.refetchQueries({ queryKey: ["rsvp", eventId] }),
       qc.refetchQueries({ queryKey: ["ticket", eventId] }),
       qc.invalidateQueries({ queryKey: ["my-tickets"] }),
-      qc.refetchQueries({ queryKey: ["event-going-count", eventId] }),
+      qc.refetchQueries({ queryKey: ["event-attendance-counts", eventId] }),
     ]);
   }
 
   async function handleCancel() {
     if (!user) return;
     const wasGoing = rsvp?.status === "going";
-    const { error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: eventId });
+    const wasWaitlisted = rsvp?.status === "waitlist";
+    const { data, error } = await supabase.rpc("cancel_rsvp" as any, { _event_id: eventId });
     if (error) { toast.error(error.message); return; }
-    toast.success("RSVP cancelled");
+    const promotedUser = (data as any)?.promoted_user as string | null | undefined;
     qc.setQueryData(["rsvp", eventId, user.id], null);
     qc.setQueryData(["ticket", eventId, user.id], null);
-    if (wasGoing) {
-      qc.setQueryData<number | undefined>(["event-going-count", eventId], (c) => Math.max(0, (c ?? 1) - 1));
-    }
+    qc.setQueryData<{ going: number; waitlist: number; capacity: number | null } | undefined>(["event-attendance-counts", eventId], (counts) => counts ? {
+      ...counts,
+      going: wasGoing && !promotedUser ? Math.max(0, counts.going - 1) : counts.going,
+      waitlist: wasWaitlisted || promotedUser ? Math.max(0, counts.waitlist - 1) : counts.waitlist,
+    } : counts);
     await Promise.all([
       qc.refetchQueries({ queryKey: ["rsvp", eventId] }),
       qc.refetchQueries({ queryKey: ["ticket", eventId] }),
       qc.invalidateQueries({ queryKey: ["my-tickets"] }),
-      qc.refetchQueries({ queryKey: ["event-going-count", eventId] }),
+      qc.refetchQueries({ queryKey: ["event-attendance-counts", eventId] }),
     ]);
   }
 
@@ -180,6 +207,11 @@ function EventDetail() {
 
   const endsAt = event.end_at ? new Date(event.end_at).getTime() : new Date(event.start_at).getTime();
   const ended = endsAt < Date.now();
+  const capacity = attendance?.capacity ?? event.capacity ?? 0;
+  const occupiedSeats = attendance?.going ?? 0;
+  const waitlistCount = attendance?.waitlist ?? 0;
+  const seatsLeft = capacity > 0 ? Math.max(0, capacity - occupiedSeats) : null;
+  const isFull = capacity > 0 && occupiedSeats >= capacity;
 
   return (
     <article className="mx-auto max-w-4xl px-6 py-10">
@@ -208,11 +240,13 @@ function EventDetail() {
           )}
           <h1 className="mt-2 font-display text-4xl md:text-5xl">{event.title}</h1>
           <RsvpStatusChip status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} promoted={promoted} />
+          <RsvpStatusPanel status={rsvp?.status} queuePosition={rsvp?.queue_position ?? null} ticketId={ticket?.id ?? null} promoted={promoted} />
 
           <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(event.start_at).toLocaleString()}</span>
             {event.location && <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" />{event.location}</span>}
-            {event.capacity && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />Cap. {event.capacity}</span>}
+            {capacity > 0 && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />{occupiedSeats}/{capacity} seats occupied</span>}
+            <span className="inline-flex items-center gap-2"><Clock className="h-4 w-4" />{waitlistCount} waitlisted</span>
             {user && !isHost && <ReportButton target={{ kind: "event", eventId }} />}
           </div>
 
@@ -242,15 +276,15 @@ function EventDetail() {
                 <p className="mt-3 text-sm">On the waitlist — position <span className="font-medium">#{rsvp.queue_position ?? "?"}</span></p>
                 <Button onClick={handleCancel} variant="outline" className="mt-3 w-full" size="sm">Leave waitlist</Button>
               </>
-            ) : (goingCount ?? 0) >= (event.capacity ?? 0) ? (
+            ) : isFull ? (
               <>
-                <p className="mt-3 text-sm">This event is full ({goingCount}/{event.capacity}).</p>
+                <p className="mt-3 text-sm">This event is full ({occupiedSeats}/{capacity}).</p>
                 <Button onClick={handleRsvp} className="mt-3 w-full" size="lg" variant="outline">Join waitlist</Button>
                 {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to join the waitlist.</p>}
               </>
             ) : (
               <>
-                <p className="mt-3 text-sm text-muted-foreground">{(event.capacity ?? 0) - (goingCount ?? 0)} of {event.capacity} spots left</p>
+                <p className="mt-3 text-sm text-muted-foreground">{seatsLeft ?? "—"} of {capacity || "—"} spots left</p>
                 <Button onClick={handleRsvp} className="mt-3 w-full" size="lg">I'm going</Button>
                 {!user && <p className="mt-2 text-xs text-muted-foreground">Sign in to RSVP and get your ticket.</p>}
               </>
@@ -409,6 +443,46 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
       )}
     </section>
   );
+}
+
+function RsvpStatusPanel({
+  status,
+  queuePosition,
+  ticketId,
+  promoted,
+}: {
+  status: string | undefined;
+  queuePosition: number | null;
+  ticketId: string | null;
+  promoted: boolean;
+}) {
+  if (status === "going") {
+    return (
+      <Alert className="mt-5 border-primary/30 bg-primary/10">
+        <Ticket className="h-4 w-4" />
+        <AlertTitle>{promoted ? "You're in — promoted from waitlist" : "You're going"}</AlertTitle>
+        <AlertDescription>
+          <Link to="/tickets" hash={ticketId ? `ticket-${ticketId}` : undefined} className="font-medium text-primary underline-offset-4 hover:underline">
+            View your ticket
+          </Link>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (status === "waitlist") {
+    return (
+      <Alert className="mt-5 border-primary/30 bg-primary/10">
+        <Clock className="h-4 w-4" />
+        <AlertTitle>You're on the waitlist</AlertTitle>
+        <AlertDescription>
+          Your position is <span className="font-medium">#{queuePosition ?? "?"}</span>.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return null;
 }
 
 function PendingTile({
