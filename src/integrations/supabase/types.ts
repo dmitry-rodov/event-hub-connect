@@ -485,6 +485,7 @@ export type Database = {
     Functions: {
       cancel_rsvp: { Args: { _event_id: string }; Returns: Json }
       event_attendance_counts: { Args: { _event_id: string }; Returns: Json }
+      get_host_contact_email: { Args: { _host_id: string }; Returns: string }
       has_host_role: {
         Args: {
           _host_id: string

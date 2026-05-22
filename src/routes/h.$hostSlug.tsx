@@ -48,7 +48,11 @@ function HostPage() {
   const { data: host, isLoading } = useQuery({
     queryKey: ["host", hostSlug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("hosts").select("*").eq("slug", hostSlug).maybeSingle();
+      const { data, error } = await supabase
+        .from("hosts")
+        .select("id, slug, name, description, avatar_url, banner_url, website, created_by, created_at, updated_at")
+        .eq("slug", hostSlug)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -66,6 +70,15 @@ function HostPage() {
         .eq("role", "host")
         .maybeSingle();
       return !!data;
+    },
+  });
+
+  const { data: contactEmail } = useQuery({
+    queryKey: ["host-contact-email", host?.id, user?.id],
+    enabled: !!user && !!host?.id && !!isHost,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_host_contact_email" as any, { _host_id: host!.id });
+      return (data as string | null) ?? null;
     },
   });
 
@@ -102,9 +115,9 @@ function HostPage() {
             <h1 className="font-display text-4xl">{host.name}</h1>
             {host.description && <p className="mt-2 max-w-xl text-muted-foreground">{host.description}</p>}
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-              {host.contact_email && (
-                <a href={`mailto:${host.contact_email}`} className="inline-flex items-center gap-1 text-primary hover:underline">
-                  <Mail className="h-3 w-3" /> {host.contact_email}
+              {contactEmail && (
+                <a href={`mailto:${contactEmail}`} className="inline-flex items-center gap-1 text-primary hover:underline">
+                  <Mail className="h-3 w-3" /> {contactEmail}
                 </a>
               )}
               {host.website && (
