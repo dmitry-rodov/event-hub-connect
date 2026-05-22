@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Globe, Pencil } from "lucide-react";
+import { Calendar, Globe, Mail, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/h/$hostSlug")({
   component: HostPage,
