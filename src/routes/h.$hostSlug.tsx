@@ -100,11 +100,18 @@ function HostPage() {
           <div>
             <h1 className="font-display text-4xl">{host.name}</h1>
             {host.description && <p className="mt-2 max-w-xl text-muted-foreground">{host.description}</p>}
-            {host.website && (
-              <a href={host.website} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                <Globe className="h-3 w-3" /> {host.website}
-              </a>
-            )}
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+              {host.contact_email && (
+                <a href={`mailto:${host.contact_email}`} className="inline-flex items-center gap-1 text-primary hover:underline">
+                  <Mail className="h-3 w-3" /> {host.contact_email}
+                </a>
+              )}
+              {host.website && (
+                <a href={host.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                  <Globe className="h-3 w-3" /> {host.website}
+                </a>
+              )}
+            </div>
           </div>
         </div>
         {isHost && (
