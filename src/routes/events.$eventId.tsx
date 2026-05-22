@@ -248,6 +248,7 @@ function EventDetail() {
             {event.location && <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" />{event.location}</span>}
             {capacity > 0 && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />{occupiedSeats}/{capacity} seats occupied</span>}
             <span className="inline-flex items-center gap-2"><Clock className="h-4 w-4" />{waitlistCount} waitlisted</span>
+            <ShareButton title={event.title} text={event.description ?? undefined} path={`/events/${eventId}`} />
             {user && !isHost && <ReportButton target={{ kind: "event", eventId }} />}
           </div>
 
