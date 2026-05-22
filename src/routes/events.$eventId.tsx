@@ -323,13 +323,13 @@ function GallerySection({ eventId, isHost }: { eventId: string; isHost: boolean 
     },
   });
 
-  async function hidePhoto(photoId: string) {
+  async function setHidden(photoId: string, hidden: boolean) {
     const { error } = await supabase
       .from("gallery_photos")
-      .update({ hidden: true })
+      .update({ hidden })
       .eq("id", photoId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Hidden");
+    toast.success(hidden ? "Hidden" : "Shown");
     qc.invalidateQueries({ queryKey: ["gallery", eventId] });
   }
 
