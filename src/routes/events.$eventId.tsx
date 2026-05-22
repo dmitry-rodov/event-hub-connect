@@ -296,7 +296,7 @@ function EventDetail() {
       </div>
 
       <GallerySection eventId={eventId} isHost={!!isHost} />
-      {ended && rsvp?.status === "going" && <FeedbackSection eventId={eventId} />}
+      {ended && <FeedbackSection eventId={eventId} canSubmit={rsvp?.status === "going"} />}
     </article>
   );
 }
