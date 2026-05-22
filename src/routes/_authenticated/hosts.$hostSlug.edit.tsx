@@ -27,9 +27,15 @@ function EditHost() {
   const { data: host, isLoading } = useQuery({
     queryKey: ["host", hostSlug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("hosts").select("*").eq("slug", hostSlug).maybeSingle();
+      const { data, error } = await supabase
+        .from("hosts")
+        .select("id, slug, name, description, avatar_url, banner_url, website, created_by, created_at, updated_at")
+        .eq("slug", hostSlug)
+        .maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      const { data: email } = await supabase.rpc("get_host_contact_email" as any, { _host_id: data.id });
+      return { ...data, contact_email: (email as string | null) ?? null };
     },
   });
 
