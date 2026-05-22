@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Users, Hourglass, CheckCircle2 } from "lucide-react";
+import { Plus, Calendar, Users, Hourglass, CheckCircle2, Download } from "lucide-react";
+import { toast } from "sonner";
 import { fetchHostedEvents, isPast, type HostedEvent } from "@/lib/hosted-events";
+import { exportEventCsv } from "@/lib/event-export.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Host Dashboard — Gather" }] }),
@@ -19,17 +22,19 @@ function Dashboard() {
     queryFn: () => fetchHostedEvents(user!.id),
   });
 
-  const upcoming = (data ?? []).filter((e) => !isPast(e)).sort(
+  // Host dashboard: only events where the user has the host role (exclude checker-only).
+  const hostEvents = (data ?? []).filter((e) => e.role === "host");
+  const upcoming = hostEvents.filter((e) => !isPast(e)).sort(
     (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
   );
-  const past = (data ?? []).filter(isPast);
+  const past = hostEvents.filter(isPast);
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 pb-24">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl">Host Dashboard</h1>
-          <p className="mt-2 text-muted-foreground">Events you host or check in.</p>
+          <p className="mt-2 text-muted-foreground">Events you host.</p>
         </div>
         <Button asChild>
           <Link to="/hosts/new"><Plus className="mr-2 h-4 w-4" /> New Host</Link>
@@ -38,9 +43,9 @@ function Dashboard() {
 
       {isLoading ? (
         <div className="mt-10 h-40 animate-pulse rounded-xl bg-muted" />
-      ) : (data?.length ?? 0) === 0 ? (
+      ) : hostEvents.length === 0 ? (
         <div className="mt-10 rounded-xl border border-dashed py-16 text-center text-muted-foreground">
-          You're not a member of any host yet.
+          You don't host any events yet.
           <div className="mt-4">
             <Button asChild size="sm"><Link to="/hosts/new">Create your first host</Link></Button>
           </div>
@@ -71,6 +76,25 @@ function Section({ title, events, empty }: { title: string; events: HostedEvent[
 }
 
 function EventRow({ ev }: { ev: HostedEvent }) {
+  const exportFn = useServerFn(exportEventCsv);
+
+  async function doExport(kind: "rsvps" | "attendance") {
+    try {
+      const { filename, csv } = await exportFn({ data: { eventId: ev.id, kind } });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Export failed");
+    }
+  }
+
   return (
     <Card className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -90,6 +114,14 @@ function EventRow({ ev }: { ev: HostedEvent }) {
           <Stat icon={<Hourglass className="h-4 w-4" />} label="Waitlist" value={ev.counts.waitlist} />
           <Stat icon={<CheckCircle2 className="h-4 w-4" />} label="Checked-in" value={ev.counts.checkedIn} />
         </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={() => doExport("rsvps")}>
+          <Download className="mr-1.5 h-3.5 w-3.5" />Export RSVPs
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => doExport("attendance")}>
+          <Download className="mr-1.5 h-3.5 w-3.5" />Export attendance
+        </Button>
       </div>
     </Card>
   );
