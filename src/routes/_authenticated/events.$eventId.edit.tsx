@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { Copy, Eye, EyeOff } from "lucide-react";
+import { ShareButton } from "@/components/ShareButton";
 import { slugify } from "@/lib/event-schema";
 
 export const Route = createFileRoute("/_authenticated/events/$eventId/edit")({
