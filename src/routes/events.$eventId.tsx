@@ -83,7 +83,7 @@ function EventDetail() {
 
   const { data: ticket } = useQuery({
     queryKey: ["ticket", eventId, user?.id],
-    enabled: !!user && rsvp?.status === "going",
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase
         .from("tickets")
