@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Ticket as TicketIcon } from "lucide-react";
+import { Calendar, MapPin, Ticket as TicketIcon, X } from "lucide-react";
 import { buildIcs, downloadIcs } from "@/lib/ics";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/tickets")({
   head: () => ({ meta: [{ title: "My Tickets — Gather" }] }),
