@@ -180,6 +180,10 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
                     View event
                   </Link>
                 </Button>
+                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={handleCancel} disabled={cancelling}>
+                  <X className="mr-2 h-3.5 w-3.5" />
+                  {cancelling ? "Cancelling…" : "Cancel ticket"}
+                </Button>
               </div>
             </div>
           </div>
