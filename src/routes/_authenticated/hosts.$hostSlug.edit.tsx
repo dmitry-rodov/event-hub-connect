@@ -193,7 +193,7 @@ function ProfileCard({ host, onSaved }: { host: any; onSaved: () => void }) {
   const [name, setName] = useState<string>(host.name ?? "");
   const [description, setDescription] = useState<string>(host.description ?? "");
   const [contactEmail, setContactEmail] = useState<string>(host.contact_email ?? "");
-  const [website, setWebsite] = useState<string>(host.website ?? "");
+  
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
