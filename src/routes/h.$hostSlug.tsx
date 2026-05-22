@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Globe, Mail, Pencil } from "lucide-react";
+import { ShareButton } from "@/components/ShareButton";
 
 export const Route = createFileRoute("/h/$hostSlug")({
   component: HostPage,
