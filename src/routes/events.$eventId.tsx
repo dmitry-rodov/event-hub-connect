@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { ReportButton } from "@/components/ReportButton";
 import { ShareButton } from "@/components/ShareButton";
 import { FeedbackSection } from "@/components/FeedbackSection";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 
 export const Route = createFileRoute("/events/$eventId")({
@@ -88,13 +90,14 @@ function EventDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("tickets")
-        .select("id")
+        .select("id, code")
         .eq("event_id", eventId)
         .eq("user_id", user!.id)
         .maybeSingle();
-      return data as { id: string } | null;
+      return data as { id: string; code: string } | null;
     },
   });
+
 
   // Detect promotion: previously waitlisted, now going
   const [promoted, setPromoted] = useState(false);
@@ -258,6 +261,11 @@ function EventDetail() {
               {event.description}
             </div>
           )}
+
+          {!ended && ticket && rsvp?.status === "going" && (
+            <TicketPass ticketId={ticket.id} code={ticket.code} />
+          )}
+
         </div>
 
         <aside className="space-y-4">
@@ -579,5 +587,37 @@ function RsvpStatusChip({
     <span className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${cls}`}>
       {label}
     </span>
+  );
+}
+
+function TicketPass({ ticketId, code }: { ticketId: string; code: string }) {
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success("Code copied");
+    } catch {
+      toast.error("Could not copy");
+    }
+  }
+  return (
+    <div id={`ticket-${ticketId}`} className="mt-8 scroll-mt-24 rounded-xl border bg-card p-5">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">Your ticket</div>
+      <div className="mt-3 flex items-center gap-4 rounded-lg border bg-muted/30 p-3">
+        <div className="shrink-0 rounded-md bg-background p-2">
+          <QRCodeSVG value={code} size={104} includeMargin={false} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Ticket code</div>
+          <button
+            onClick={copyCode}
+            className="mt-1 break-all text-left font-mono text-sm font-semibold tracking-wider text-primary hover:underline"
+            title="Click to copy"
+          >
+            {code}
+          </button>
+          <p className="mt-2 text-xs text-muted-foreground">Show this QR code at check-in.</p>
+        </div>
+      </div>
+    </div>
   );
 }
