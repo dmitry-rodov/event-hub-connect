@@ -88,13 +88,14 @@ function EventDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("tickets")
-        .select("id")
+        .select("id, code")
         .eq("event_id", eventId)
         .eq("user_id", user!.id)
         .maybeSingle();
-      return data as { id: string } | null;
+      return data as { id: string; code: string } | null;
     },
   });
+
 
   // Detect promotion: previously waitlisted, now going
   const [promoted, setPromoted] = useState(false);
