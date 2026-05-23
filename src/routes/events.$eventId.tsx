@@ -589,3 +589,35 @@ function RsvpStatusChip({
     </span>
   );
 }
+
+function TicketPass({ ticketId, code }: { ticketId: string; code: string }) {
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success("Code copied");
+    } catch {
+      toast.error("Could not copy");
+    }
+  }
+  return (
+    <div id={`ticket-${ticketId}`} className="mt-8 scroll-mt-24 rounded-xl border bg-card p-5">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">Your ticket</div>
+      <div className="mt-3 flex items-center gap-4 rounded-lg border bg-muted/30 p-3">
+        <div className="shrink-0 rounded-md bg-background p-2">
+          <QRCodeSVG value={code} size={104} includeMargin={false} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Ticket code</div>
+          <button
+            onClick={copyCode}
+            className="mt-1 break-all text-left font-mono text-sm font-semibold tracking-wider text-primary hover:underline"
+            title="Click to copy"
+          >
+            {code}
+          </button>
+          <p className="mt-2 text-xs text-muted-foreground">Show this QR code at check-in.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
