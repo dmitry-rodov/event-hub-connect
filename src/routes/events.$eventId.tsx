@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { ReportButton } from "@/components/ReportButton";
 import { ShareButton } from "@/components/ShareButton";
 import { FeedbackSection } from "@/components/FeedbackSection";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 
 export const Route = createFileRoute("/events/$eventId")({
