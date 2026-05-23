@@ -261,6 +261,11 @@ function EventDetail() {
               {event.description}
             </div>
           )}
+
+          {!ended && ticket && rsvp?.status === "going" && (
+            <TicketPass ticketId={ticket.id} code={ticket.code} />
+          )}
+
         </div>
 
         <aside className="space-y-4">
