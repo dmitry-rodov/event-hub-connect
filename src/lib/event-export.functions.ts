@@ -5,7 +5,6 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const InputSchema = z.object({
   eventId: z.string().uuid(),
-  kind: z.enum(["rsvps", "attendance"]),
 });
 
 function csvEscape(value: string | number | null | undefined): string {
@@ -27,7 +26,7 @@ export const exportEventCsv = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { eventId, kind } = data;
+    const { eventId } = data;
 
     // Load event using the user's RLS-scoped client to confirm access.
     const { data: event, error: evErr } = await supabase
@@ -76,13 +75,8 @@ export const exportEventCsv = createServerFn({ method: "POST" })
       if (uid) checkinByUser.set(uid, c.checked_in_at);
     }
 
-    // Pick rows by kind.
     const rsvps = rsvpsRes.data ?? [];
-    const rows = kind === "attendance"
-      ? rsvps.filter((r) => checkinByUser.has(r.user_id))
-      : rsvps;
-
-    const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+    const userIds = Array.from(new Set(rsvps.map((r) => r.user_id)));
 
     // Names from profiles.
     const { data: profiles } = userIds.length
@@ -102,7 +96,7 @@ export const exportEventCsv = createServerFn({ method: "POST" })
     // Build CSV.
     const header = ["name", "email", "RSVP status", "check-in time"];
     const lines = [header.map(csvEscape).join(",")];
-    for (const r of rows) {
+    for (const r of rsvps) {
       const ci = checkinByUser.get(r.user_id);
       lines.push([
         csvEscape(nameById.get(r.user_id) ?? ""),
@@ -113,7 +107,7 @@ export const exportEventCsv = createServerFn({ method: "POST" })
     }
     const csv = "\uFEFF" + lines.join("\r\n") + "\r\n";
 
-    const filename = `${event.slug}-${kind === "attendance" ? "attendance" : "rsvps"}-${ymd(new Date())}.csv`;
+    const filename = `${event.slug}-rsvps-and-attendance-${ymd(new Date())}.csv`;
 
     return { filename, csv };
   });
