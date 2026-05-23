@@ -78,9 +78,9 @@ function Section({ title, events, empty }: { title: string; events: HostedEvent[
 function EventRow({ ev }: { ev: HostedEvent }) {
   const exportFn = useServerFn(exportEventCsv);
 
-  async function doExport(kind: "rsvps" | "attendance") {
+  async function doExport() {
     try {
-      const { filename, csv } = await exportFn({ data: { eventId: ev.id, kind } });
+      const { filename, csv } = await exportFn({ data: { eventId: ev.id } });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -116,11 +116,8 @@ function EventRow({ ev }: { ev: HostedEvent }) {
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onClick={() => doExport("rsvps")}>
-          <Download className="mr-1.5 h-3.5 w-3.5" />Export RSVPs
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => doExport("attendance")}>
-          <Download className="mr-1.5 h-3.5 w-3.5" />Export attendance
+        <Button size="sm" variant="outline" onClick={doExport}>
+          <Download className="mr-1.5 h-3.5 w-3.5" />Export RSVPs and attendance
         </Button>
       </div>
     </Card>
