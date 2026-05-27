@@ -75,25 +75,11 @@ function CheckinPage() {
     },
   });
 
-  // Realtime invalidation
+  // Poll for updates (replaces realtime subscriptions for security)
   useEffect(() => {
     if (!ctx?.allowed) return;
-    const channel = supabase
-      .channel(`checkin-${eventId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "checkins", filter: `event_id=eq.${eventId}` },
-        () => refetchCounters(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "rsvps", filter: `event_id=eq.${eventId}` },
-        () => refetchCounters(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(() => refetchCounters(), 5000);
+    return () => clearInterval(interval);
   }, [eventId, ctx?.allowed, refetchCounters]);
 
   async function handleCheckin(e?: React.FormEvent) {
