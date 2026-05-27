@@ -140,22 +140,8 @@ function EventDetail() {
       qc.invalidateQueries({ queryKey: ["ticket", eventId] });
       qc.invalidateQueries({ queryKey: ["my-tickets"] });
     };
-    const channel = supabase
-      .channel(`event-attendance-${eventId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "rsvps", filter: `event_id=eq.${eventId}` },
-        refresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "tickets", filter: `event_id=eq.${eventId}` },
-        refresh,
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(refresh, 10000);
+    return () => clearInterval(interval);
   }, [eventId, qc]);
 
   async function handleRsvp() {
