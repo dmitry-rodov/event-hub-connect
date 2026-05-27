@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client";
 
 const filtersSchema = z.object({
   q: z.string().trim().max(200).optional().default(""),
@@ -15,7 +15,7 @@ export const exploreEvents = createServerFn({ method: "POST" })
   .inputValidator((input) => filtersSchema.parse(input))
   .handler(async ({ data }) => {
     // Always restrict to published + public (unlisted excluded from Explore)
-    let query = supabaseAdmin
+    let query = supabase
       .from("events")
       .select(
         "id, title, description, cover_image_url, location, start_at, end_at, host:hosts(slug, name, avatar_url)"
